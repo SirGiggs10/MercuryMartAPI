@@ -103,7 +103,7 @@ namespace MercuryMartAPI
             services.AddTransient<IAuthorizationHandler, FunctionalityNameHandler>();
 
             services.AddDbContext<DataContext>(options => options.UseLazyLoadingProxies(false).UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-            //services.AddScoped<IAdministratorRepository, AdministratorRepository>();
+            services.AddScoped<IAdministratorRepository, AdministratorRepository>();
             services.AddScoped<ICustomerManagementRepository, CustomerManagementRepository>();
             services.AddScoped<IGlobalRepository, GlobalRepository>();
             services.AddScoped<IAuthRepository, AuthRepository>();

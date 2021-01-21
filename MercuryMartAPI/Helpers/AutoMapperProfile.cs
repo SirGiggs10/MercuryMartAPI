@@ -18,7 +18,9 @@ namespace MercuryMartAPI.Helpers
         {
             CreateMap<Customer, CustomerResponse>();
 
+            CreateMap<AdministratorRequest, Administrator>();
             CreateMap<Administrator, AdministratorResponse>();
+            CreateMap<AdministratorToUpdate, Administrator>();
             
             CreateMap<User, UserDetails>();
             CreateMap<UserDetails, UserLoginResponse>();
@@ -41,6 +43,8 @@ namespace MercuryMartAPI.Helpers
 
             CreateMap<CustomerCartItemRequest, CustomerCartItem>();
             CreateMap<CustomerCartItem, CustomerCartItemResponse>();
+
+            CreateMap<FunctionalityRole, FunctionalityRoleResponse>();
         }
     }
 }

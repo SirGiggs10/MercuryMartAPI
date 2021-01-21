@@ -32,6 +32,7 @@ namespace MercuryMartAPI.Helpers
         public const int CloudinaryFileDeleteError = 17;
         public const int CloudinaryDeleteError = 18;
         public const int UserNotAllowed = 19;
+        public const int UserClaimNotFound = 20;
 
         // STATUS MESSAGES
         public const string StatusMessageSuccess = "Request Successful";
@@ -54,6 +55,7 @@ namespace MercuryMartAPI.Helpers
         public const string StatusMessageCloudinaryFileDeleteError = "An Error Occured While Deleting the File";
         public const string StatusMessageCloudinaryDeleteError = "An Error Occured while Deleting files from Cloudinary";
         public const string StatusMessageUserNotAllowed = "User Not Allowed Because His/Her Role doesnt have Access Level to the Functionality";
+        public const string StatusMessageUserClaimNotFound = "User Claim was Not Found";
 
         //ROLES
         public const string SystemAdminRole = "SystemAdmin";

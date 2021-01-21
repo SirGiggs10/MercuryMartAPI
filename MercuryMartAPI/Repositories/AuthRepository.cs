@@ -443,7 +443,7 @@ namespace MercuryMartAPI.Repositories
             return tokenHandler.WriteToken(token);
         }
 
-        private string GetHashedEmail(string emailVal)
+        public string GetHashedEmail(string emailVal)
         {
             return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(emailVal));//.Replace("=","ngiSlauqe");
         }

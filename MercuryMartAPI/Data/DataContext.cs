@@ -29,19 +29,19 @@ namespace MercuryMartAPI.Data
                 userRole.HasOne(ur => ur.User).WithMany(r => r.UserRoles).HasForeignKey(ur => ur.UserId).IsRequired(false);
             });
 
-            builder.Entity<Administrator>().HasOne(a => a.User).WithOne(b => b.Administrator).HasForeignKey<Administrator>(c => c.UserId).IsRequired(true);
+            builder.Entity<Administrator>().HasOne(a => a.User).WithOne(b => b.Administrator).HasForeignKey<Administrator>(c => c.UserId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<Customer>().HasOne(a => a.User).WithOne(b => b.Customer).HasForeignKey<Customer>(c => c.UserId).IsRequired(true);
+            builder.Entity<Customer>().HasOne(a => a.User).WithOne(b => b.Customer).HasForeignKey<Customer>(c => c.UserId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Product>().HasOne(a => a.Category).WithMany(b => b.Products).HasForeignKey(c => c.CategoryId).IsRequired(false);
 
-            builder.Entity<CustomerCartItem>().HasOne(a => a.Customer).WithMany(b => b.CustomerCartItems).HasForeignKey(c => c.CustomerId).IsRequired(false);
+            builder.Entity<CustomerCartItem>().HasOne(a => a.Customer).WithMany(b => b.CustomerCartItems).HasForeignKey(c => c.CustomerId).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<CustomerOrder>().HasOne(a => a.Customer).WithMany(b => b.CustomerOrders).HasForeignKey(c => c.CustomerId).IsRequired(false);
+            builder.Entity<CustomerOrder>().HasOne(a => a.Customer).WithMany(b => b.CustomerOrders).HasForeignKey(c => c.CustomerId).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<CustomerOrderGroup>().HasOne(a => a.CustomerOrder).WithMany(b => b.CustomerOrderGroups).HasForeignKey(c => c.CustomerOrderId).IsRequired(true);
+            builder.Entity<CustomerOrderGroup>().HasOne(a => a.CustomerOrder).WithMany(b => b.CustomerOrderGroups).HasForeignKey(c => c.CustomerOrderId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<CustomerOrderGroupItem>().HasOne(a => a.CustomerOrderGroup).WithMany(b => b.CustomerOrderGroupItems).HasForeignKey(c => c.CustomerOrderGroupId).IsRequired(true);
+            builder.Entity<CustomerOrderGroupItem>().HasOne(a => a.CustomerOrderGroup).WithMany(b => b.CustomerOrderGroupItems).HasForeignKey(c => c.CustomerOrderGroupId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<ProjectModule>().HasMany(a => a.Functionalities).WithOne(b => b.ProjectModule).HasForeignKey(c => c.ProjectModuleId).IsRequired(false);
 
@@ -52,6 +52,8 @@ namespace MercuryMartAPI.Data
             builder.Entity<User>().HasQueryFilter(a => !a.Deleted);
             builder.Entity<Administrator>().HasQueryFilter(a => !a.DeletedAt.HasValue);
             builder.Entity<Customer>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+            builder.Entity<ProjectModule>().HasQueryFilter(a => !a.DeletedAt.HasValue);
+            builder.Entity<Functionality>().HasQueryFilter(a => !a.DeletedAt.HasValue);
         }
 
         public DbSet<ProjectModule> ProjectModule { get; set; }

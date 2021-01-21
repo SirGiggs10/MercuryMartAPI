@@ -9,7 +9,8 @@ namespace MercuryMartAPI.Dtos.RoleFunctionality
     {
         public int Id { get; set; }
         public int RoleId { get; set; }
-        public string FunctionalityName { get; set; }
         public string RoleName { get; set; }
+        public int FunctionalityId { get; set; }
+        public string FunctionalityName { get; set; }
     }
 }

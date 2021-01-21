@@ -43,8 +43,8 @@ namespace MercuryMartAPI.Controllers
         /// <summary>
         /// GET ALL CUSTOMERS IN THE SYSTEM
         /// </summary>
-        // GET: api/CustomerManagement/{custom
-        [RequiredFunctionalityName("GetCustomersFromManagement")]
+        // GET: api/CustomerManagement
+        [RequiredFunctionalityName("GetCustomerManagements")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomerManagement([FromQuery] UserParams userParams)
         {
@@ -60,6 +60,28 @@ namespace MercuryMartAPI.Controllers
             {
                 return StatusCode(StatusCodes.Status400BadRequest, result);
             }
+        }
+
+        /// <summary>
+        /// GET ALL CUSTOMERS IN THE SYSTEM
+        /// </summary>
+        // GET: api/CustomerManagement/5
+        [RequiredFunctionalityName("GetCustomerManagement")]
+        [HttpGet("{customerId}}")]
+        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomerManagement([FromRoute] int customerId)
+        {
+            var result = await _customerManagementRepository.GetCustomers(customerId);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<CustomerResponse>((Customer)result.ObjectValue);
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
 
         }
 
@@ -67,9 +89,9 @@ namespace MercuryMartAPI.Controllers
         /// REGISTER A NEW CUSTOMER TO THE SYSTEM
         /// </summary>
         // POST: api/CustomerManagement/Create
-        [RequiredFunctionalityName("PostCreateCustomerFromManagement")]
-        [HttpPost("Create/")]
-        public async Task<ActionResult> PostCreateCustomer(CustomerRequest customerRequest)
+        [RequiredFunctionalityName("PostCustomerManagement")]
+        [HttpPost]
+        public async Task<ActionResult> PostCustomerManagement([FromBody] CustomerRequest customerRequest)
         {
             var dbTransaction = await _context.Database.BeginTransactionAsync();
             var result = await _customerManagementRepository.CreateCustomer(customerRequest);
@@ -79,6 +101,60 @@ namespace MercuryMartAPI.Controllers
                 var customer = _mapper.Map<CustomerResponse>((Customer)result.ObjectValue);
                 result.ObjectValue = customer;
 
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
+
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
+
+        /// <summary>
+        /// UPDATE CUSTOMER INFORMATION IN THE SYSTEM
+        /// </summary>
+        // POST: api/CustomerManagement/Update
+        [RequiredFunctionalityName("PutCustomerManagement")]
+        [HttpPut("{customerId}")]
+        public async Task<ActionResult> PutCustomerManagement([FromRoute] int customerId, [FromBody] CustomerToUpdate customerToUpdate)
+        {
+            var dbTransaction = await _context.Database.BeginTransactionAsync();
+            var result = await _customerManagementRepository.UpdateCustomer(customerId, customerToUpdate);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                var customer = _mapper.Map<CustomerResponse>((Customer)result.ObjectValue);
+                result.ObjectValue = customer;
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
+
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
+
+        /// <summary>
+        /// DELETE A CUSTOMER IN THE SYSTEM
+        /// </summary>
+        // POST: api/CustomerManagement/Delete
+        [RequiredFunctionalityName("DeleteCustomerManagement")]
+        [HttpPost("Delete")]
+        public async Task<ActionResult> DeleteCustomerManagement([FromBody] List<int> customersIds)
+        {
+            var dbTransaction = await _context.Database.BeginTransactionAsync();
+            var result = await _customerManagementRepository.DeleteCustomer(customersIds);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                var customer = _mapper.Map<CustomerResponse>((Customer)result.ObjectValue);
+                result.ObjectValue = customer;
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result);

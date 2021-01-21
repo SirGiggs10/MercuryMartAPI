@@ -17,6 +17,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Security.Claims;
 
 namespace MercuryMartAPI.Repositories
 {
@@ -72,7 +73,7 @@ namespace MercuryMartAPI.Repositories
                 };
             }
 
-            if(string.IsNullOrWhiteSpace(customerRequest.EmailAddress) || string.IsNullOrWhiteSpace(customerRequest.FullName) || string.IsNullOrWhiteSpace(customerRequest.PhoneNumber) || string.IsNullOrWhiteSpace(customerRequest.Address))
+            if(string.IsNullOrWhiteSpace(customerRequest.EmailAddress) || string.IsNullOrWhiteSpace(customerRequest.FullName) || string.IsNullOrWhiteSpace(customerRequest.PhoneNumber) || string.IsNullOrWhiteSpace(customerRequest.Address) || string.IsNullOrWhiteSpace(customerRequest.Password))
             {
                 return new ReturnResponse()
                 {
@@ -131,7 +132,7 @@ namespace MercuryMartAPI.Repositories
 
                 var password = _helper.RandomPassword();
 
-                var result = await _userManager.CreateAsync(user, password);
+                var result = await _userManager.CreateAsync(user, customerRequest.Password);
                 if (result.Succeeded)
                 {
                     //ASSIGN CUSTOMER ROLE TO USER (CUSTOMER)
@@ -171,7 +172,7 @@ namespace MercuryMartAPI.Repositories
 
                         //SEND MAIL TO CUSTOMER TO CONFIRM EMAIL
                         var userTokenVal = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        string hashedEmail = GetHashedEmail(user.Email);
+                        string hashedEmail = _authRepository.GetHashedEmail(user.Email);
                         var fullToken = userTokenVal + "#" + hashedEmail;
                         var emailVerificationLink = _authRepository.GetUserEmailVerificationLink(fullToken);
                         if (emailVerificationLink == null)
@@ -232,11 +233,6 @@ namespace MercuryMartAPI.Repositories
                 StatusMessage = Utils.StatusMessageSaveError
             };
         }
-
-        private string GetHashedEmail(string emailVal)
-        {
-            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(emailVal));
-        }
        
         public async Task<ReturnResponse> SearchCustomer(string searchParams, UserParams userParams)
         {
@@ -261,6 +257,192 @@ namespace MercuryMartAPI.Repositories
                 StatusCode = Utils.Success,
                 StatusMessage = "Search Successful!!!",
                 ObjectValue = listOfCustomers,
+            };
+        }
+
+        public async Task<ReturnResponse> GetCustomers(int customerId)
+        {
+            var customer = await _dataContext.Customer.Where(a => a.CustomerId == customerId).FirstOrDefaultAsync();
+            
+            if(customer == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotFound,
+                    StatusMessage = Utils.StatusMessageNotFound
+                };
+            }
+
+            return new ReturnResponse()
+            {
+                StatusCode = Utils.Success,
+                StatusMessage = Utils.StatusMessageSuccess,
+                ObjectValue = customer
+            };
+        }
+
+        public async Task<ReturnResponse> UpdateCustomer(int customerId, CustomerToUpdate customer)
+        {
+            if (customer == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.ObjectNull,
+                    StatusMessage = Utils.StatusMessageObjectNull
+                };
+            }
+
+            //GET USER THAT MADE THIS REQUEST
+            var userTypeIdClaim = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(a => a.Type == ClaimTypes.NameIdentifier);
+            if (userTypeIdClaim == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.UserClaimNotFound,
+                    StatusMessage = Utils.StatusMessageUserClaimNotFound
+                };
+            }
+
+            var userTypeIdVal = Convert.ToInt32(userTypeIdClaim.Value);
+
+            if ((customerId != customer.CustomerId) || (customerId != userTypeIdVal))
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.BadRequest,
+                    StatusMessage = Utils.StatusMessageBadRequest
+                };
+            }
+
+            var customerDetails = await _dataContext.Customer.Where(a => a.CustomerId == customerId).FirstOrDefaultAsync();
+            if (customerDetails == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotFound,
+                    StatusMessage = Utils.StatusMessageNotFound
+                };
+            }
+
+            var customerToUpdate = _mapper.Map(customer, customerDetails);
+            var updateResult = _globalRepository.Update(customerToUpdate);
+            if (!updateResult)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotSucceeded,
+                    StatusMessage = Utils.StatusMessageNotSucceeded
+                };
+            }
+
+            var saveResult = await _globalRepository.SaveAll();
+            if (!saveResult.HasValue)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.SaveError,
+                    StatusMessage = Utils.StatusMessageSaveError
+                };
+            }
+
+            if (!saveResult.Value)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.SaveNoRowAffected,
+                    StatusMessage = Utils.StatusMessageSaveNoRowAffected
+                };
+            }
+
+            return new ReturnResponse()
+            {
+                StatusCode = Utils.Success,
+                StatusMessage = Utils.StatusMessageSuccess,
+                ObjectValue = customerToUpdate
+            };
+        }
+
+        public async Task<ReturnResponse> DeleteCustomer(List<int> customersIds)
+        {
+            if (customersIds == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.ObjectNull,
+                    StatusMessage = Utils.StatusMessageObjectNull
+                };
+            }
+
+            var customersToDelete = new List<Customer>();
+            foreach (var t in customersIds)
+            {
+                var customer = await _dataContext.Customer.Where(a => a.CustomerId == t).FirstOrDefaultAsync();
+                if (customer == null)
+                {
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.NotFound,
+                        StatusMessage = Utils.StatusMessageNotFound
+                    };
+                }
+
+                var user = await _userManager.FindByIdAsync(Convert.ToString(customer.UserId));
+                if (user == null)
+                {
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.NotFound,
+                        StatusMessage = Utils.StatusMessageNotFound
+                    };
+                }
+
+                var userDeletionResult = await _userManager.DeleteAsync(user);
+                if (!userDeletionResult.Succeeded)
+                {
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.NotSucceeded,
+                        StatusMessage = Utils.StatusMessageNotSucceeded
+                    };
+                }
+
+                customersToDelete.Add(customer);
+            }
+            /*
+            var deletionResult = _globalRepository.Delete(customersToDelete);
+            if (!deletionResult)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotSucceeded,
+                    StatusMessage = Utils.StatusMessageNotSucceeded
+                };
+            }
+
+            var saveResult = await _globalRepository.SaveAll();
+            if (!saveResult.HasValue)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.SaveError,
+                    StatusMessage = Utils.StatusMessageSaveError
+                };
+            }
+
+            if (!saveResult.Value)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.SaveNoRowAffected,
+                    StatusMessage = Utils.StatusMessageSaveNoRowAffected
+                };
+            }
+            */
+            return new ReturnResponse()
+            {
+                StatusCode = Utils.Success,
+                StatusMessage = Utils.StatusMessageSuccess,
+                ObjectValue = customersToDelete
             };
         }
     }

@@ -1,5 +1,4 @@
-﻿/*//LATEST
-using AutoMapper;
+﻿using AutoMapper;
 using MercuryMartAPI.Data;
 using MercuryMartAPI.Dtos.Auth;
 using MercuryMartAPI.Dtos.General;
@@ -35,7 +34,16 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> AssignRolesToUser(RoleUserAssignmentRequest roleAssignmentRequest)
         {
-            if (roleAssignmentRequest.Users == null || roleAssignmentRequest.Roles == null || roleAssignmentRequest == null)
+            if (roleAssignmentRequest == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.ObjectNull,
+                    StatusMessage = Utils.StatusMessageObjectNull
+                };
+            }
+
+            if (roleAssignmentRequest.Users == null || roleAssignmentRequest.Roles == null)
             {
                 return new ReturnResponse()
                 {
@@ -50,7 +58,7 @@ namespace MercuryMartAPI.Repositories
 
             foreach(var h in roleAssignmentRequest.Roles)
             {
-                var roleDetail = await _roleManager.FindByIdAsync(Convert.ToString(h.Id));
+                var roleDetail = await _roleManager.FindByIdAsync(Convert.ToString(h));
                 if (roleDetail == null)
                 {
                     return new ReturnResponse()
@@ -68,7 +76,7 @@ namespace MercuryMartAPI.Repositories
 
             foreach (var z in roleAssignmentRequest.Users)
             {
-                var userDetail = await _userManager.FindByIdAsync(Convert.ToString(z.Id));
+                var userDetail = await _userManager.FindByIdAsync(Convert.ToString(z));
                 if (userDetail == null)
                 {
                     return new ReturnResponse()
@@ -92,162 +100,6 @@ namespace MercuryMartAPI.Repositories
 
                 var listOfRolesToAssign = listOfRolesToReturn.Select(a => a.Name);
                 //UPDATE THE USER'S ROLES WITH THIS CURRENT INCOMING ROLES
-                foreach (var roleDett in listOfRolesToAssign)
-                {
-                    //CHECK TO SEE IF ANYBODY HOLDS THAT ROLE (APART FROM AllStaff ROLE)...IF ANY OVERWRITE IT
-                    if (roleDett.Equals(Utils.MdCeoBranchManagerRole, StringComparison.OrdinalIgnoreCase) || roleDett.Equals(Utils.HeadOfDepartmentRole, StringComparison.OrdinalIgnoreCase) || roleDett.Equals(Utils.HeadOfUnitRole, StringComparison.OrdinalIgnoreCase) || roleDett.Equals(Utils.ZonalManagerRole, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var allUsersInRole = await _userManager.GetUsersInRoleAsync(roleDett);
-
-                        if (roleDett.Equals(Utils.HeadOfDepartmentRole, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var userDept = await _dataContext.Staff.Where(a => a.StaffId == userDetail.UserTypeId).Include(b => b.Department).FirstOrDefaultAsync();
-                            if (userDept == null)
-                            {
-                                return new ReturnResponse()
-                                {
-                                    StatusCode = Utils.NotFound,
-                                    StatusMessage = Utils.StatusMessageNotFound
-                                };
-                            }
-
-                            foreach (var uss in allUsersInRole)
-                            {
-                                var currUserWithRole = await _dataContext.Staff.FindAsync(uss.UserTypeId);
-                                if (currUserWithRole == null)
-                                {
-                                    return new ReturnResponse()
-                                    {
-                                        StatusCode = Utils.NotFound,
-                                        StatusMessage = Utils.StatusMessageNotFound
-                                    };
-                                }
-
-                                if (userDept.DepartmentId == currUserWithRole.DepartmentId)
-                                {
-                                    var fResult = await _userManager.RemoveFromRoleAsync(uss, roleDett);
-                                    if (!fResult.Succeeded)
-                                    {
-                                        return new ReturnResponse()
-                                        {
-                                            StatusCode = Utils.NotSucceeded,
-                                            StatusMessage = Utils.StatusMessageNotSucceeded
-                                        };
-                                    }
-                                }
-                            }
-
-                            //THEN UPDATE DEPARTMENT HEAD OF DEPARTMENT
-                            var departmentToUpdate = userDept.Department;
-                            departmentToUpdate.HeadOfDepartmentStaffId = userDept.StaffId;
-                            _globalRepository.Update(departmentToUpdate);
-                            var deptResult = await _globalRepository.SaveAll();
-                            if (deptResult.HasValue)
-                            {
-                                if (!deptResult.Value)
-                                {
-                                    return new ReturnResponse()
-                                    {
-                                        StatusCode = Utils.SaveNoRowAffected,
-                                        StatusMessage = Utils.StatusMessageSaveNoRowAffected
-                                    };
-                                }
-                            }
-                            else
-                            {
-                                return new ReturnResponse()
-                                {
-                                    StatusCode = Utils.SaveError,
-                                    StatusMessage = Utils.StatusMessageSaveError
-                                };
-                            }
-                        }
-                        else if (roleDett.Equals(Utils.HeadOfUnitRole, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var userUnit = await _dataContext.Staff.Where(a => a.StaffId == userDetail.UserTypeId).Include(b => b.SubUnit).FirstOrDefaultAsync();
-                            if (userUnit == null)
-                            {
-                                return new ReturnResponse()
-                                {
-                                    StatusCode = Utils.NotFound,
-                                    StatusMessage = Utils.StatusMessageNotFound
-                                };
-                            }
-
-                            foreach (var uss in allUsersInRole)
-                            {
-                                var currUserWithRole = await _dataContext.Staff.FindAsync(uss.UserTypeId);
-                                if (currUserWithRole == null)
-                                {
-                                    return new ReturnResponse()
-                                    {
-                                        StatusCode = Utils.NotFound,
-                                        StatusMessage = Utils.StatusMessageNotFound
-                                    };
-                                }
-
-                                if (userUnit.SubUnitId == currUserWithRole.SubUnitId)
-                                {
-                                    var fResult = await _userManager.RemoveFromRoleAsync(uss, roleDett);
-                                    if (!fResult.Succeeded)
-                                    {
-                                        return new ReturnResponse()
-                                        {
-                                            StatusCode = Utils.NotSucceeded,
-                                            StatusMessage = Utils.StatusMessageNotSucceeded
-                                        };
-                                    }
-                                }
-                            }
-
-                            //THEN UPDATE SUBUNIT HEAD OF UNIT
-                            var subUnitToUpdate = userUnit.SubUnit;
-                            subUnitToUpdate.HeadOfUnitStaffId = userUnit.StaffId;
-                            _globalRepository.Update(subUnitToUpdate);
-                            var deptResult = await _globalRepository.SaveAll();
-                            if (deptResult.HasValue)
-                            {
-                                if (!deptResult.Value)
-                                {
-                                    return new ReturnResponse()
-                                    {
-                                        StatusCode = Utils.SaveNoRowAffected,
-                                        StatusMessage = Utils.StatusMessageSaveNoRowAffected
-                                    };
-                                }
-                            }
-                            else
-                            {
-                                return new ReturnResponse()
-                                {
-                                    StatusCode = Utils.SaveError,
-                                    StatusMessage = Utils.StatusMessageSaveError
-                                };
-                            }
-                        }
-                        else if (roleDett.Equals(Utils.ZonalManagerRole, StringComparison.OrdinalIgnoreCase))
-                        {
-                            //TO BE UPDATED LATER AFTER UI HAS BEEN DONE FOR IT
-                        }
-                        else
-                        {
-                            //MD/CEO/BRANCHMANAGER ROLE
-                            foreach (var ur in allUsersInRole)
-                            {
-                                var idResult = await _userManager.RemoveFromRoleAsync(ur, roleDett);
-                                if (!idResult.Succeeded)
-                                {
-                                    return new ReturnResponse()
-                                    {
-                                        StatusCode = Utils.NotSucceeded,
-                                        StatusMessage = Utils.StatusMessageNotSucceeded
-                                    };
-                                }
-                            }
-                        }
-                    }
-                }
-
                 try
                 {
                     var result = await _userManager.AddToRolesAsync(userDetail, listOfRolesToAssign);
@@ -267,8 +119,7 @@ namespace MercuryMartAPI.Repositories
                         StatusCode = Utils.RoleAssignmentError,
                         StatusMessage = Utils.StatusMessageRoleAssignmentError
                     };
-                }
-                
+                }                
 
                 userRolesToReturn.Add(new UserAndRolesResponse()
                 {
@@ -410,31 +261,13 @@ namespace MercuryMartAPI.Repositories
             var rolesToReturn = new List<Role>();
             foreach (var t in roles)
             {
-                if(t.UserType != Utils.Staff && t.UserType != Utils.Customer)
+                if(t.UserType != Utils.Administrator && t.UserType != Utils.Customer)
                 {
                     return new ReturnResponse()
                     {
                         StatusCode = Utils.InvalidUserType,
                         StatusMessage = Utils.StatusMessageInvalidUserType
                     };
-                }
-
-                if(t.UserType == Utils.Staff)
-                {
-                    var supportLevel = await _globalRepository.Get<SupportLevel>(t.SupportLevelId);
-                    if (supportLevel == null)
-                    {
-                        return new ReturnResponse()
-                        {
-                            StatusCode = Utils.NotFound,
-                            StatusMessage = Utils.StatusMessageNotFound
-                        };
-                    }
-                }
-                else
-                {
-                    //CUSTOMER
-                    t.SupportLevelId = Utils.NoSupportLevel;
                 }
 
                 t.RoleName = t.Name;
@@ -459,9 +292,9 @@ namespace MercuryMartAPI.Repositories
             };
         }
 
-        public async Task<ReturnResponse> DeleteFunctionality(List<FunctionalityResponse> functionalities)
+        public async Task<ReturnResponse> DeleteFunctionality(List<int> functionalityIds)
         {
-            if (functionalities == null)
+            if (functionalityIds == null)
             {
                 return new ReturnResponse()
                 {
@@ -471,9 +304,9 @@ namespace MercuryMartAPI.Repositories
             }
 
             var functionalitiesToReturn = new List<Functionality>();
-            foreach (var t in functionalities)
+            foreach (var t in functionalityIds)
             {
-                var functionalityDetail = await _globalRepository.Get<Functionality>(t.FunctionalityId);
+                var functionalityDetail = await _globalRepository.Get<Functionality>(t);
                 if(functionalityDetail == null)
                 {
                     return new ReturnResponse()
@@ -514,9 +347,9 @@ namespace MercuryMartAPI.Repositories
             };
         }
 
-        public async Task<ReturnResponse> DeleteProjectModule(List<ProjectModuleResponse> projectModules)
+        public async Task<ReturnResponse> DeleteProjectModule(List<int> projectModulesIds)
         {
-            if (projectModules == null)
+            if (projectModulesIds == null)
             {
                 return new ReturnResponse()
                 {
@@ -526,9 +359,9 @@ namespace MercuryMartAPI.Repositories
             }
 
             var projectModulesToReturn = new List<ProjectModule>();
-            foreach (var t in projectModules)
+            foreach (var t in projectModulesIds)
             {
-                var projectModuleDetail = await _globalRepository.Get<ProjectModule>(t.ProjectModuleId);
+                var projectModuleDetail = await _globalRepository.Get<ProjectModule>(t);
                 if(projectModuleDetail == null)
                 {
                     return new ReturnResponse()
@@ -569,9 +402,9 @@ namespace MercuryMartAPI.Repositories
             };
         }
 
-        public async Task<ReturnResponse> DeleteRoles(List<RoleResponse> roles)
+        public async Task<ReturnResponse> DeleteRoles(List<int> rolesIds)
         {
-            if (roles == null)
+            if (rolesIds == null)
             {
                 return new ReturnResponse()
                 {
@@ -581,9 +414,9 @@ namespace MercuryMartAPI.Repositories
             }
 
             var rolesToReturn = new List<Role>();
-            foreach (var t in roles)
+            foreach (var t in rolesIds)
             {
-                var roleDetail = await _roleManager.FindByIdAsync(Convert.ToString(t.Id));
+                var roleDetail = await _roleManager.FindByIdAsync(Convert.ToString(t));
                 if(roleDetail == null)
                 {
                     return new ReturnResponse()
@@ -617,14 +450,6 @@ namespace MercuryMartAPI.Repositories
         public async Task<ReturnResponse> GetFunctionalities(UserParams userParams)
         {
             var functionalities = _dataContext.Functionality;
-            if(functionalities == null || !(await functionalities.AnyAsync()))
-            {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotFound,
-                    StatusMessage = Utils.StatusMessageNotFound
-                };
-            }
 
             var functionalitiesToReturn = await PagedList<Functionality>.CreateAsync(functionalities, userParams.PageNumber, userParams.PageSize);
 
@@ -660,15 +485,6 @@ namespace MercuryMartAPI.Repositories
         {
             var projectModules = _dataContext.ProjectModule.Include(a => a.Functionalities);
 
-            if (projectModules == null || !projectModules.Any())
-            {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotFound,
-                    StatusMessage = Utils.StatusMessageNotFound
-                };
-            }
-
             var projectModulesToReturn = await PagedList<ProjectModule>.CreateAsync(projectModules, userParams.PageNumber, userParams.PageSize);
 
             return new ReturnResponse()
@@ -701,16 +517,7 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> GetRoles(UserParams userParams)
         {
-            var roles = _roleManager.Roles.Include(a => a.UserRoles).Include(b => b.SupportLevel);
-
-            if (roles == null || !roles.Any())
-            {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotFound,
-                    StatusMessage = Utils.StatusMessageNotFound
-                };
-            }
+            var roles = _roleManager.Roles;
 
             var rolesToReturn = await PagedList<Role>.CreateAsync(roles, userParams.PageNumber, userParams.PageSize);
 
@@ -724,7 +531,7 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> GetRoles(int id)
         {
-            var role = await _roleManager.Roles.Where(c => c.Id == id).Include(a => a.UserRoles).Include(b => b.SupportLevel).FirstOrDefaultAsync();
+            var role = await _roleManager.Roles.Where(c => c.Id == id).FirstOrDefaultAsync();
 
             if (role == null)
             {
@@ -743,29 +550,6 @@ namespace MercuryMartAPI.Repositories
             };
         }
 
-        public async Task<ReturnResponse> GetStaffUsersRoles(UserParams userParams)
-        {
-            var staffUsersRoles = _dataContext.UserRoles.Include(a => a.User).Where(b => b.User.UserType == Utils.Staff).Include(a => a.User).ThenInclude(c => c.Staff).Include(d => d.Role);
-
-            if (staffUsersRoles == null || !(await staffUsersRoles.AnyAsync()))
-            {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotFound,
-                    StatusMessage = Utils.StatusMessageNotFound
-                };
-            }
-
-            var staffUsersRolesToReturn = await PagedList<UserRole>.CreateAsync(staffUsersRoles, userParams.PageNumber, userParams.PageSize);
-
-            return new ReturnResponse()
-            {
-                StatusCode = Utils.Success,
-                ObjectValue = staffUsersRolesToReturn,
-                StatusMessage = Utils.StatusMessageSuccess
-            };
-        }
-
         public async Task<ReturnResponse> UpdateRoles(List<RoleResponse> roles)
         {
             if (roles == null || roles.Any(a => string.IsNullOrWhiteSpace(a.Name)))
@@ -780,22 +564,12 @@ namespace MercuryMartAPI.Repositories
             var rolesToReturn = new List<Role>();
             foreach (var t in roles)
             {
-                if (t.UserType != Utils.Staff && t.UserType != Utils.Customer)
+                if (t.UserType != Utils.Administrator && t.UserType != Utils.Customer)
                 {
                     return new ReturnResponse()
                     {
                         StatusCode = Utils.InvalidUserType,
                         StatusMessage = Utils.StatusMessageInvalidUserType
-                    };
-                }
-
-                var supportLevel = await _globalRepository.Get<SupportLevel>(t.SupportLevelId);
-                if (supportLevel == null)
-                {
-                    return new ReturnResponse()
-                    {
-                        StatusCode = Utils.NotFound,
-                        StatusMessage = Utils.StatusMessageNotFound
                     };
                 }
 
@@ -814,7 +588,6 @@ namespace MercuryMartAPI.Repositories
                 roleDetail.Name = t.Name;
                 roleDetail.RoleDescription = t.RoleDescription;
                 roleDetail.UserType = t.UserType;
-                roleDetail.SupportLevelId = t.SupportLevelId;
                 roleDetail.RoleName = t.Name;
                 roleDetail.ModifiedAt = DateTimeOffset.Now;
 
@@ -838,6 +611,96 @@ namespace MercuryMartAPI.Repositories
                 StatusMessage = Utils.StatusMessageSuccess
             };
         }
-     }
+
+        public async Task<ReturnResponse> AssignFunctionalitiesToRole(FunctionalityRoleAssignmentRequest functionalityRoleAssignmentRequest)
+        {
+            if (functionalityRoleAssignmentRequest == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.ObjectNull,
+                    StatusMessage = Utils.StatusMessageObjectNull
+                };
+            }
+
+            var functionalityRoles = new List<FunctionalityRole>();
+            var role = await _roleManager.FindByIdAsync(Convert.ToString(functionalityRoleAssignmentRequest.RoleId));
+            if (role == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotFound,
+                    StatusMessage = Utils.StatusMessageNotFound
+                };
+            }
+
+            //DELETE THE OLD FUNCTIONALITIES TIED TO THE ROLE
+            var functionalityRolesToDelete = await _dataContext.FunctionalityRole.Where(a => a.RoleId == functionalityRoleAssignmentRequest.RoleId).ToListAsync();
+            var deletionResult = _globalRepository.Delete(functionalityRolesToDelete);
+            if (!deletionResult)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotSucceeded,
+                    StatusMessage = Utils.StatusMessageNotSucceeded
+                };
+            }
+
+            foreach (var r in functionalityRoleAssignmentRequest.FunctionalityIds)
+            {
+                var functionality = await _dataContext.Functionality.Where(a => a.FunctionalityId == r).FirstOrDefaultAsync();
+                if (functionality == null)
+                {
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.NotFound,
+                        StatusMessage = Utils.StatusMessageNotFound
+                    };
+                }
+
+                functionalityRoles.Add(new FunctionalityRole()
+                {
+                    RoleId = role.Id,
+                    RoleName = role.Name,
+                    FunctionalityId = functionality.FunctionalityId,
+                    FunctionalityName = functionality.FunctionalityName
+                });
+            }
+
+            var result = await _globalRepository.Add(functionalityRoles);
+            if (result)
+            {
+                var saved = await _globalRepository.SaveAll();
+                if (saved.HasValue)
+                {
+                    if (!saved.Value)
+                    {
+                        return new ReturnResponse()
+                        {
+                            StatusCode = Utils.SaveNoRowAffected,
+                            StatusMessage = Utils.StatusMessageSaveNoRowAffected
+                        };
+                    }
+
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.Success,
+                        StatusMessage = Utils.StatusMessageSuccess,
+                        ObjectValue = functionalityRoles
+                    };
+                }
+
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.SaveError,
+                    StatusMessage = Utils.StatusMessageSaveError
+                };
+            }
+
+            return new ReturnResponse()
+            {
+                StatusCode = Utils.NotSucceeded
+            };
+        }
+    }
 }
-*/

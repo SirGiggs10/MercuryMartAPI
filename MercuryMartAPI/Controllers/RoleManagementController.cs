@@ -1,16 +1,14 @@
-﻿/*
- //LATEST
+﻿//LATEST
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using MercuryMartAPI.Data;
-using MercuryMartAPI.Dtos.AuditReport;
 using MercuryMartAPI.Dtos.General;
 using MercuryMartAPI.Dtos.RoleFunctionality;
-using MercuryMartAPI.Dtos.UserManagement;
 using MercuryMartAPI.Helpers;
+using MercuryMartAPI.Helpers.AuthorizationMiddleware;
 using MercuryMartAPI.Interfaces;
 using MercuryMartAPI.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -27,14 +25,12 @@ namespace MercuryMartAPI.Controllers
         private readonly IRoleManagementRepository _roleManagementRepository;
         private readonly IMapper _mapper;
         private readonly DataContext _dataContext;
-        private readonly IAuditReportRepository _auditReportRepository;
 
-        public RoleManagementController(IRoleManagementRepository roleManagementRepository, IMapper mapper, DataContext dataContext, IAuditReportRepository auditReportRepository)
+        public RoleManagementController(IRoleManagementRepository roleManagementRepository, IMapper mapper, DataContext dataContext)
         {
             _roleManagementRepository = roleManagementRepository;
             _mapper = mapper;
             _dataContext = dataContext;
-            _auditReportRepository = auditReportRepository;
         }
 
         /// <summary>
@@ -51,24 +47,6 @@ namespace MercuryMartAPI.Controllers
             {
                 var listOfRoles = _mapper.Map<List<RoleResponse>>(((List<Role>)result.ObjectValue));
                 result.ObjectValue = listOfRoles;
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "PostRoles",
-                    AuditReportActivityResourceId = listOfRoles.Select(a => a.Id).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -95,31 +73,8 @@ namespace MercuryMartAPI.Controllers
                 var rolesToReturn = new List<RoleResponse>();
                 var roles = (PagedList<Role>)result.ObjectValue;
                 var roleList = roles.ToList();
-                foreach(var role in roleList)
-                {
-                    int userCountInRole = role.UserRoles.Count;
-                    var roleResponse = _mapper.Map<RoleResponse>(role);
-                    roleResponse.NumberOfUsersAssignedToRole = userCountInRole;
-                    rolesToReturn.Add(roleResponse);
-                }
-
-                result.ObjectValue = rolesToReturn;
+                result.ObjectValue = _mapper.Map<List<RoleResponse>>(roleList);
                 Response.AddPagination(roles.CurrentPage, roles.PageSize, roles.TotalCount, roles.TotalPages);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetRoles",
-                    AuditReportActivityResourceId = new List<int>() { }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
@@ -140,26 +95,7 @@ namespace MercuryMartAPI.Controllers
 
             if (result.StatusCode == Utils.Success)
             {
-                var role = (Role)result.ObjectValue;
-                int userCountInRole = role.UserRoles.Count;
-                var roleResponse = _mapper.Map<RoleResponse>(role);
-                roleResponse.NumberOfUsersAssignedToRole = userCountInRole;
-                result.ObjectValue = roleResponse;
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetRole",
-                    AuditReportActivityResourceId = new List<int>() { id }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
+                result.ObjectValue = _mapper.Map<RoleResponse>((Role)result.ObjectValue); ;
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
@@ -182,24 +118,6 @@ namespace MercuryMartAPI.Controllers
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<List<RoleResponse>>(((List<Role>)result.ObjectValue));
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "PutRoles",
-                    AuditReportActivityResourceId = roleResponses.Select(a => a.Id).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -217,32 +135,14 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("DeleteRoles")]
         [HttpPost("Roles/Delete")]
-        public async Task<ActionResult> DeleteRoles(List<RoleResponse> roles)
+        public async Task<ActionResult> DeleteRoles([FromBody] List<int> rolesIds)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
-            var result = await _roleManagementRepository.DeleteRoles(roles);
+            var result = await _roleManagementRepository.DeleteRoles(rolesIds);
 
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<List<RoleResponse>>(((List<Role>)result.ObjectValue));
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "DeleteRoles",
-                    AuditReportActivityResourceId = roles.Select(a => a.Id).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -267,24 +167,6 @@ namespace MercuryMartAPI.Controllers
 
             if (result.StatusCode == Utils.Success)
             {
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "PostAssignRolesToUser",
-                    AuditReportActivityResourceId = roleAssignmentRequest.Users.Select(a => a.Id).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -293,44 +175,6 @@ namespace MercuryMartAPI.Controllers
             {
                 await dbTransaction.RollbackAsync();
 
-                return StatusCode(StatusCodes.Status400BadRequest, result);
-            }
-        }
-
-        /// <summary>
-        /// GET ALL THE STAFF USER ROLES IN THE SYSTEM
-        /// </summary>
-        [RequiredFunctionalityName("GetStaffUsersRoles")]
-        [HttpGet("Users/Roles")]
-        public async Task<ActionResult> GetStaffUsersRoles([FromQuery] UserParams userParams)
-        {
-            var result = await _roleManagementRepository.GetStaffUsersRoles(userParams);
-
-            if (result.StatusCode == Utils.Success)
-            {
-                var staffUsersRoles = (PagedList<UserRole>)result.ObjectValue;
-                result.ObjectValue = _mapper.Map<List<StaffUserRoleResponse>>(staffUsersRoles.ToList());
-                Response.AddPagination(staffUsersRoles.CurrentPage, staffUsersRoles.PageSize, staffUsersRoles.TotalCount, staffUsersRoles.TotalPages);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetStaffUsersRoles",
-                    AuditReportActivityResourceId = new List<int>() { }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
-            }
-            else
-            {
                 return StatusCode(StatusCodes.Status400BadRequest, result);
             }
         }
@@ -349,24 +193,6 @@ namespace MercuryMartAPI.Controllers
             {
                 var listOfProjectModules = _mapper.Map<List<ProjectModuleResponse>>(((List<ProjectModule>)result.ObjectValue));
                 result.ObjectValue = listOfProjectModules;
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "PostProjectModules",
-                    AuditReportActivityResourceId = listOfProjectModules.Select(a => a.ProjectModuleId).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -393,21 +219,6 @@ namespace MercuryMartAPI.Controllers
                 var projectModules = (PagedList<ProjectModule>)result.ObjectValue;
                 result.ObjectValue = _mapper.Map<List<ProjectModuleResponse>>(projectModules.ToList());
                 Response.AddPagination(projectModules.CurrentPage, projectModules.PageSize, projectModules.TotalCount, projectModules.TotalPages);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetProjectModules",
-                    AuditReportActivityResourceId = new List<int>() { }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
@@ -429,21 +240,6 @@ namespace MercuryMartAPI.Controllers
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<ProjectModuleResponse>((ProjectModule)result.ObjectValue);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetProjectModule",
-                    AuditReportActivityResourceId = new List<int>() { projectModuleId }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
@@ -458,32 +254,14 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("DeleteProjectModule")]
         [HttpPost("ProjectModules/Delete")]
-        public async Task<ActionResult> DeleteProjectModule(List<ProjectModuleResponse> projectModules)
+        public async Task<ActionResult> DeleteProjectModule([FromBody] List<int> projectModulesIds)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
-            var result = await _roleManagementRepository.DeleteProjectModule(projectModules);
+            var result = await _roleManagementRepository.DeleteProjectModule(projectModulesIds);
 
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<List<ProjectModuleResponse>>(((List<ProjectModule>)result.ObjectValue));
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "DeleteProjectModule",
-                    AuditReportActivityResourceId = projectModules.Select(a => a.ProjectModuleId).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -511,24 +289,6 @@ namespace MercuryMartAPI.Controllers
             {
                 var listOfFunctionalities = _mapper.Map<List<FunctionalityResponse>>(((List<Functionality>)result.ObjectValue));
                 result.ObjectValue = listOfFunctionalities;
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "PostFunctionalities",
-                    AuditReportActivityResourceId = listOfFunctionalities.Select(a => a.FunctionalityId).ToList()
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
-
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -555,21 +315,6 @@ namespace MercuryMartAPI.Controllers
                 var functionalities = (PagedList<Functionality>)result.ObjectValue;
                 result.ObjectValue = _mapper.Map<List<FunctionalityResponse>>(functionalities.ToList());
                 Response.AddPagination(functionalities.CurrentPage, functionalities.PageSize, functionalities.TotalCount, functionalities.TotalPages);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetFunctionalities",
-                    AuditReportActivityResourceId = new List<int>() { }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
@@ -591,22 +336,7 @@ namespace MercuryMartAPI.Controllers
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<FunctionalityResponse>((Functionality)result.ObjectValue);
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "GetFunctionality",
-                    AuditReportActivityResourceId = new List<int>() { }
-                });
-
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
-
+                
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
             }
             else
@@ -620,32 +350,39 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("DeleteFunctionality")]
         [HttpPost("Functionalities/Delete")]
-        public async Task<ActionResult> DeleteFunctionality(List<FunctionalityResponse> functionalities)
+        public async Task<ActionResult> DeleteFunctionality([FromBody] List<int> functionalitiesIds)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
-            var result = await _roleManagementRepository.DeleteFunctionality(functionalities);
+            var result = await _roleManagementRepository.DeleteFunctionality(functionalitiesIds);
 
             if (result.StatusCode == Utils.Success)
             {
                 result.ObjectValue = _mapper.Map<List<FunctionalityResponse>>(((List<Functionality>)result.ObjectValue));
-                //AUDIT THIS ACTIVITY FOR THE USER
-                var auditResult = await _auditReportRepository.CreateAuditReport(new AuditReportRequest()
-                {
-                    AuditReportActivityFunctionalityName = "DeleteFunctionality",
-                    AuditReportActivityResourceId = functionalities.Select(a => a.FunctionalityId).ToList()
-                });
+                await dbTransaction.CommitAsync();
 
-                if (auditResult.StatusCode != Utils.Success)
-                {
-                    await dbTransaction.RollbackAsync();
+                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
 
-                    return StatusCode(StatusCodes.Status400BadRequest, new ReturnResponse()
-                    {
-                        StatusCode = Utils.AuditReportError,
-                        StatusMessage = Utils.StatusMessageAuditReportError
-                    });
-                }
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
 
+        /// <summary>
+        /// ASSIGN FUNCTIONALITIES TO ROLE IN THE SYSTEM
+        /// </summary>
+        [RequiredFunctionalityName("PostAssignFunctionalitiesToRole")]
+        [HttpPost("Role/Functionalities/Assign")]
+        public async Task<ActionResult> PostAssignFunctionalitiesToRole([FromBody] FunctionalityRoleAssignmentRequest functionalityRoleAssignmentRequest)
+        {
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _roleManagementRepository.AssignFunctionalitiesToRole(functionalityRoleAssignmentRequest);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<List<FunctionalityRoleResponse>>(((List<FunctionalityRole>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
@@ -659,4 +396,3 @@ namespace MercuryMartAPI.Controllers
         }
     }
 }
-*/

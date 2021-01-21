@@ -24,5 +24,6 @@ namespace MercuryMartAPI.Interfaces
         public string GetUserEmailVerificationLink(string userToken);
         public Task<ReturnResponse> GetUser(int userId);
         public Task<bool> UserEmailExists(string userEmailAddress);
+        public string GetHashedEmail(string emailVal);
     }
 }

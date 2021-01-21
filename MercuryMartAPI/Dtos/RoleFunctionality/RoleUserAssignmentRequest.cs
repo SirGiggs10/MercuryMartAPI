@@ -8,7 +8,7 @@ namespace MercuryMartAPI.Dtos.RoleFunctionality
 {
     public class RoleUserAssignmentRequest
     {
-        public List<UserToReturn> Users { get; set; }
-        public List<RoleResponse> Roles { get; set; }
+        public List<int> Users { get; set; }
+        public List<int> Roles { get; set; }
     }
 }
