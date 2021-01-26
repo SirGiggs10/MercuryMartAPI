@@ -1,0 +1,246 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap"
+          rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        header {
+            background: linear-gradient(193.85deg, #565aa4 11.97%, #79ccc9 153.17%);
+            color: white;
+        }
+
+        p {
+            font-size: 12px;
+            color: #505050;
+        }
+
+        .btn {
+            cursor: pointer;
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .btn-purple {
+            height: 40px;
+            background: #565aa4;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .text-blue {
+            color: #565aa4;
+        }
+
+        .mail-body {
+            background: white;
+            border-bottom: #5357a2 solid 4px;
+            padding: 3rem 2rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .pb-3,
+        .py-3 {
+            padding-bottom: 1rem !important;
+        }
+
+        .pt-3,
+        .py-3 {
+            padding-top: 1rem !important;
+        }
+
+        .pt-4,
+        .py-4 {
+            padding-top: 1.5rem !important;
+        }
+
+        .pb-4,
+        .py-4 {
+            padding-bottom: 1.5rem !important;
+        }
+
+        .p-4 {
+            padding-bottom: 1.5rem !important;
+            padding-top: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            padding-left: 1.5rem !important;
+        }
+
+        .pt-2,
+        .py-2 {
+            padding-top: 0.5rem !important;
+        }
+
+        .pb-2,
+        .py-2 {
+            padding-bottom: 0.5rem !important;
+        }
+
+        .pt-5,
+        .py-5 {
+            padding-top: 3rem !important;
+        }
+
+        .pb-5,
+        .py-5 {
+            padding-bottom: 3rem !important;
+        }
+
+        .px-5 {
+            padding-right: 3rem !important;
+            padding-left: 3rem !important;
+        }
+
+        .mt-4,
+        .my-4 {
+            margin-top: 1.5rem !important;
+        }
+
+        .mb-4,
+        .my-4 {
+            margin-bottom: 1.5rem !important;
+        }
+
+        .mt-2,
+        .my-2 {
+            margin-top: 0.5rem !important;
+        }
+
+        .mb-2,
+        .my-2 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .ml-2 {
+            margin-left: 0.5rem !important;
+        }
+
+        .mr-2 {
+            margin-right: 0.5rem !important;
+        }
+
+        .mt-3,
+        .my-3 {
+            margin-top: 1rem !important;
+        }
+
+        .mb-3,
+        .my-3 {
+            margin-bottom: 1rem !important;
+        }
+
+        .mt-5,
+        .my-5 {
+            margin-top: 3rem !important;
+        }
+
+        .mb-5,
+        .my-5 {
+            margin-bottom: 3rem !important;
+        }
+
+        .align-items-center {
+            align-items: center !important;
+        }
+
+        .justify-content-between {
+            justify-content: space-between !important;
+        }
+
+        .container {
+            padding-right: 15px;
+            padding-left: 15px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+
+        .d-flex {
+            display: flex;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+    </style>
+    <title>MercuryMart</title>
+</head>
+<body class="container">
+    <section>
+        <header class="text-center py-3">
+            <div>
+                <img src="data:image/png;base64,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" alt="" />
+                <div class="my-2" style="font-size: 24px; font-weight: bold;">
+                    Welcome
+                </div>
+            </div>
+        </header>
+        <div class="mail-body">
+            <p>Dear User,</p>
+            <p>
+                {message1}
+            </p>
+            <p>
+                {message2}
+            </p>
+            <div class="text-center my-5">
+                <a style="margin-bottom: 0%!important;padding-bottom:1.5%!important;height: auto!important;" href="{link}" class="btn btn-purple px-5">Activate</a>
+            </div>
+            <p>
+                If you have questions or need any technical assistance, please seek
+                help from our company’s technical support team click
+                <a href="mailto:support@mercurymart.com.ng"
+                   class="text-blue"
+                   style="text-decoration: underline; font-weight: bold;">
+                    here
+                </a>
+            </p>
+            <p>
+                Have an awesome day.
+            </p>
+            <div class="mt-5 mb-4 d-flex flex-wrap align-items-center justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAJCAYAAAAPU20uAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACiSURBVHgBbY3BDYJAFETnL8EzHUgJ2gElcBCzISZgR1oBiXgg8QId2IEluCXsVTbsl0VMjOzk52eSeZmhfX59AojZors1hxR/EgBHzpDAGh4JgtCzj72Ahe0+ls9eYNxupxisfAC5l+X1iUBFb822bY5qJ+uEBqGN6dUEpGUVrV7hw+Hj3Rko5wJN3yopq3gIwooYyWLiV5m8lAhEQcwbMOk3b18zMcfASkQAAAAASUVORK5CYII=" alt="" />
+                        <div class="text-blue ml-2" style="font-size: 9px;">
+                            +234 801 234 5678
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAADpSURBVHgBZVDBDYJAENxdT6OJiXQgHUgJlsDDB4kP6MASKAWMTz6UoB1QAnQgHzUSWHcPMAYvcJfZndm5OYDJ8v3E8YPEndZRt0Nw2RPBfqjtgKGWTqmAG8qz7FgYBT0JY9tguCKqni2GeauCgtSKAbfQs27jJBHmvSVulUNmbTwh1JaHuJG9ZugqOT1LZKyXS/AIO3LFKtQJyOCIa6i/3FO/lInjlmauGQI4UvYZIZWxaucwdpWcJ8UqoTG+DSEEKUcqEoeNhhj79L049lN/3i2yTsxnxaZ5vPPFytwBSdL/rxlz+Xq2xQfogVOXqcUkEAAAAABJRU5ErkJggg==" alt="" />
+                        <a href="mailto:support@mercurymart.com.ng"
+                           class="text-blue ml-2"
+                           style="font-size: 9px;">
+                            support@mercurymart.com.ng
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <img src="data:image/png;base64,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" alt="" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

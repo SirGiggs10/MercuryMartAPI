@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace MercuryMartAPI.Repositories
@@ -91,140 +92,94 @@ namespace MercuryMartAPI.Repositories
             var Administrator = new Administrator
             {
                 EmailAddress = administratorRequest.EmailAddress,
-                FullName = administratorRequest.FullName,
+                FullName = administratorRequest.FullName
             };
 
-            var additionResult = _globalRepository.Add(Administrator);
-            if(!additionResult)
+            var user = new User
             {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotSucceeded,
-                    StatusMessage = "Error Adding Administrator"
-                };
-            }
+                UserName = administratorRequest.EmailAddress,
+                Email = administratorRequest.EmailAddress,
+                //UserTypeId = Administrator.AdministratorId,
+                UserType = Utils.Administrator,
+                Administrator = Administrator
+            };
 
-            var saveResult = await _globalRepository.SaveAll();
-            if (saveResult.HasValue)
+            var password = _helper.RandomPassword();
+            var result = await _userManager.CreateAsync(user, password);
+            if (result.Succeeded)
             {
-                if (!saveResult.Value)
+                //UPDATE USERTYPEID IN USER TABLE
+                user.UserTypeId = Administrator.AdministratorId;
+                var updateResult = await _userManager.UpdateAsync(user);
+                if(!updateResult.Succeeded)
                 {
                     return new ReturnResponse()
                     {
-                        StatusCode = Utils.SaveNoRowAffected,
-                        StatusMessage = "Administrator Information Could Not Save"
+                        StatusCode = Utils.NotSucceeded,
+                        StatusMessage = Utils.StatusMessageNotSucceeded
                     };
                 }
 
-                var user = new User
+                //ASSIGN ROLES FROM THE REQUEST DTO TO USER
+                var assignmentResult = await _roleManagementRepository.AssignRolesToUser(new RoleUserAssignmentRequest()
                 {
-                    UserName = administratorRequest.EmailAddress,
-                    Email = administratorRequest.EmailAddress,
-                    UserTypeId = Administrator.AdministratorId,
-                    UserType = Utils.Administrator
-                };
+                    Users = new List<int>()
+                    {
+                        user.Id
+                    },
+                    Roles = new List<int>()
+                    {
+                        administratorRequest.RoleId
+                    }
+                });
 
-                var password = _helper.RandomPassword();
-                var result = await _userManager.CreateAsync(user, password);
-                if (result.Succeeded)
+                if (assignmentResult.StatusCode == Utils.Success)
                 {
-                    //THEN UPDATE Administrator TABLE USERID COLUMN WITH NEWLY CREATED USER ID
-                    Administrator.UserId = user.Id;
-                    var administratorUpdateResult = _globalRepository.Update(Administrator);
-                    if (!administratorUpdateResult)
+                    var userTokenVal = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    string hashedEmail = _authRepository.GetHashedEmail(user.Email);
+                    string fullToken = userTokenVal + "#" + hashedEmail;
+                    var emailVerificationLink = _authRepository.GetUserEmailVerificationLink(fullToken);
+                    if (emailVerificationLink == null)
+                    {
+                        return new ReturnResponse()
+                        {
+                            StatusCode = Utils.ObjectNull,
+                            StatusMessage = "Could not generate Email Verification Link"
+                        };
+                    }
+
+                    var emailMessage1 = $"Your default password is {password}. It is recommended that you change this password after Confirming your Account and Logging In.";
+                    var boldedPasswordEmailMessage = Regex.Replace(emailMessage1, password, @"<b>$0</b>", RegexOptions.IgnoreCase);
+                    var emailMessage2 = "Please click the button below to complete your registration and activate your account.";
+                    var emailBody = _globalRepository.GetMailBodyTemplate(Administrator.FullName, "", emailVerificationLink, boldedPasswordEmailMessage, emailMessage2, "activation.html");
+                    var emailSubject = "CONFIRM YOUR EMAIL ADDRESS";
+                    //SEND MAIL TO ADMINISTRATOR TO VERIFY EMAIL
+                    MailModel mailObj = new MailModel(_configuration.GetValue<string>("MercuryMartEmailAddress"), _configuration.GetValue<string>("MercuryMartEmailName"), Administrator.EmailAddress, emailSubject, emailBody);
+                    var response = await _mailRepository.SendMail(mailObj);
+                    if (!response.StatusCode.Equals(HttpStatusCode.Accepted))
+                    {
+                        return new ReturnResponse()
+                        {
+                            StatusCode = Utils.MailFailure,
+                            StatusMessage = "Error Occured while sending Mail to Administrator"
+                        };
+                    }
+
+                    var administratorToReturn = await GetAdministrators(Administrator.AdministratorId);
+                    if (administratorToReturn.StatusCode != Utils.Success)
                     {
                         return new ReturnResponse()
                         {
                             StatusCode = Utils.NotSucceeded,
-                            StatusMessage = "Error Occured while saving Administrator Information"
-                        };
-                    }
-
-                    var administratorSaveResult = await _globalRepository.SaveAll();
-                    if (!administratorSaveResult.HasValue)
-                    {
-                        return new ReturnResponse()
-                        {
-                            StatusCode = Utils.SaveError,
-                            StatusMessage = "Error Occured while saving Administrator Information"
-                        };
-                    }
-
-                    if (!administratorSaveResult.Value)
-                    {
-                        return new ReturnResponse()
-                        {
-                            StatusCode = Utils.SaveNoRowAffected,
-                            StatusMessage = "Error Occured while saving Administrator Information"
-                        };
-                    }
-
-                    //ASSIGN ROLES FROM THE REQUEST DTO TO USER
-                    var assignmentResult = await _roleManagementRepository.AssignRolesToUser(new RoleUserAssignmentRequest()
-                    {
-                        Users = new List<int>()
-                        {
-                            user.Id
-                        },
-                        Roles = new List<int>()
-                        {
-                            administratorRequest.RoleId
-                        }
-                    });
-
-                    if (assignmentResult.StatusCode == Utils.Success)
-                    {
-                        var userTokenVal = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        string hashedEmail = _authRepository.GetHashedEmail(user.Email);
-                        string fullToken = userTokenVal + "#" + hashedEmail;
-                        var emailVerificationLink = _authRepository.GetUserEmailVerificationLink(fullToken);
-                        if (emailVerificationLink == null)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.ObjectNull,
-                                StatusMessage = "Could not generate Email Verification Link"
-                            };
-                        }
-
-                        var emailMessage1 = $"Your default password is {password}. It is recommended that you change this password after Confirming your Account and Logging In";
-                        var emailMessage2 = "Please click the button below to complete your registration and activate your account.";
-                        var emailBody = _globalRepository.GetMailBodyTemplate(Administrator.FullName, "", emailVerificationLink, emailMessage1, emailMessage2, "activation.html");
-                        var emailSubject = "CONFIRM YOUR EMAIL ADDRESS";
-                        //SEND MAIL TO ADMINISTRATOR TO VERIFY EMAIL
-                        MailModel mailObj = new MailModel(_configuration.GetValue<string>("MercuryMartEmailAddress"), _configuration.GetValue<string>("MercuryMartEmailName"), Administrator.EmailAddress, emailSubject, emailBody);
-                        var response = await _mailRepository.SendMail(mailObj);
-                        if (!response.StatusCode.Equals(HttpStatusCode.Accepted))
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.MailFailure,
-                                StatusMessage = "Error Occured while sending Mail to Administrator"
-                            };
-                        }
-
-                        var administratorToReturn = await GetAdministrators(Administrator.AdministratorId);
-                        if (administratorToReturn.StatusCode != Utils.Success)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.NotSucceeded,
-                                StatusMessage = "Error Occured while Fetching Administrator Information"
-                            };
-                        }
-
-                        return new ReturnResponse()
-                        {
-                            StatusCode = Utils.Success,
-                            ObjectValue = administratorToReturn,
-                            StatusMessage = "Administrator Created Successfully!!!"
+                            StatusMessage = "Error Occured while Fetching Administrator Information"
                         };
                     }
 
                     return new ReturnResponse()
                     {
-                        StatusCode = Utils.NotSucceeded,
-                        StatusMessage = "Error Occured while saving Administrator Information"
+                        StatusCode = Utils.Success,
+                        ObjectValue = (Administrator)administratorToReturn.ObjectValue,
+                        StatusMessage = "Administrator Created Successfully!!!"
                     };
                 }
 
@@ -237,7 +192,7 @@ namespace MercuryMartAPI.Repositories
 
             return new ReturnResponse()
             {
-                StatusCode = Utils.SaveError,
+                StatusCode = Utils.NotSucceeded,
                 StatusMessage = "Error Occured while saving Administrator Information"
             };
         }
@@ -328,7 +283,7 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> GetAdministrators(UserParams userParams)
         {
-            var administrators = _dataContext.Administrator;
+            var administrators = _dataContext.Administrator.Include(a => a.User).ThenInclude(b => b.UserRoles).ThenInclude(c => c.Role);
 
             var pagedListOfAdministrators = await PagedList<Administrator>.CreateAsync(administrators, userParams.PageNumber, userParams.PageSize);
             var listOfAdministrators = pagedListOfAdministrators.ToList();
@@ -345,7 +300,7 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> GetAdministrators(int administratorId)
         {
-            var administrator = await _dataContext.Administrator.Where(a => a.AdministratorId == administratorId).FirstOrDefaultAsync();
+            var administrator = await _dataContext.Administrator.Where(a => a.AdministratorId == administratorId).Include(b => b.User).ThenInclude(c => c.UserRoles).ThenInclude(d => d.Role).FirstOrDefaultAsync();
 
             if(administrator == null)
             {

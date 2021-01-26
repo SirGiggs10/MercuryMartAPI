@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MercuryMartAPI.Dtos.Auth;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,5 +13,6 @@ namespace MercuryMartAPI.Dtos.Administrator
         public string EmailAddress { get; set; }
         public int UserId { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public UserToReturnForLogin User { get; set; }
     }
 }

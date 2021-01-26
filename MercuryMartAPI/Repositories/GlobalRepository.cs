@@ -148,22 +148,35 @@ namespace MercuryMartAPI.Repositories
 
         public LoggedInUserInfo GetUserInformation()
         {
-            var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Name).Value;
-            var userTypeId = Convert.ToInt32(_httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Name);
+            var userTypeId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
             var userRoles = _httpContextAccessor.HttpContext.User.Claims.Where(n => n.Type == ClaimTypes.Role).ToList();
+
+            if(userId == null || userTypeId == null)
+            {
+                return new LoggedInUserInfo()
+                {
+                    UserId = Utils.UserClaim_Null.ToString(),
+                    UserTypeId = Utils.UserClaim_Null
+                };
+            }
+
+            var userIdVal = userId.Value;
+            var userTypeIdVal = Convert.ToInt32(userTypeId.Value);
+
             if (userRoles == null)
             {
                 return new LoggedInUserInfo()
                 {
-                    UserId = userId,
-                    UserTypeId = userTypeId
+                    UserId = userIdVal,
+                    UserTypeId = userTypeIdVal
                 };
             }
 
             return new LoggedInUserInfo()
             {
-                UserId = userId,
-                UserTypeId = userTypeId,
+                UserId = userIdVal,
+                UserTypeId = userTypeIdVal,
                 Roles = userRoles
             };
         }

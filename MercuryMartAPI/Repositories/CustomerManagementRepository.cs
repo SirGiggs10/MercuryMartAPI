@@ -18,6 +18,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Globalization;
 using System.Security.Claims;
+using MercuryMartAPI.Dtos.RoleFunctionality;
 
 namespace MercuryMartAPI.Repositories
 {
@@ -32,8 +33,10 @@ namespace MercuryMartAPI.Repositories
         private readonly UserManager<User> _userManager;
         private readonly Helper _helper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRoleManagementRepository _roleManagementRepository;
+        private readonly RoleManager<Role> _roleManager;
         
-        public CustomerManagementRepository(DataContext dataContext, IMapper mapper, UserManager<User> userManager, IGlobalRepository globalRepository, IMailRepository mailRepository, IConfiguration configuration, IAuthRepository authRepository, Helper helper, IHttpContextAccessor httpContextAccessor)
+        public CustomerManagementRepository(DataContext dataContext, IMapper mapper, UserManager<User> userManager, IGlobalRepository globalRepository, IMailRepository mailRepository, IConfiguration configuration, IAuthRepository authRepository, Helper helper, IHttpContextAccessor httpContextAccessor, IRoleManagementRepository roleManagementRepository, RoleManager<Role> roleManager)
         {
             _dataContext = dataContext;
             _globalRepository = globalRepository;
@@ -44,6 +47,8 @@ namespace MercuryMartAPI.Repositories
             _authRepository = authRepository;
             _helper = helper;
             _httpContextAccessor = httpContextAccessor;
+            _roleManagementRepository = roleManagementRepository;
+            _roleManager = roleManager;
         }
 
         public async Task<ReturnResponse> GetCustomers(UserParams userParams)
@@ -82,6 +87,16 @@ namespace MercuryMartAPI.Repositories
                 };
             }
 
+            var roleToFind = await _roleManager.FindByNameAsync(Utils.CustomerRole);
+            if (roleToFind == null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.NotFound,
+                    StatusMessage = "Role Not Found"
+                };
+            }
+
             if (await _authRepository.UserEmailExists(customerRequest.EmailAddress))
             {
                 return new ReturnResponse()
@@ -99,125 +114,91 @@ namespace MercuryMartAPI.Repositories
                 Address = customerRequest.Address
             };
 
-            var creationResult = _globalRepository.Add(customer);
-            if(!creationResult)
+            var user = new User()
             {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.NotSucceeded,
-                    StatusMessage = Utils.StatusMessageNotSucceeded
-                };
-            }
+                UserName = customerRequest.EmailAddress,
+                Email = customerRequest.EmailAddress,
+                //UserTypeId = customer.CustomerId,
+                UserType = Utils.Customer,
+                Customer = customer
+            };
 
-            var saveVal = await _globalRepository.SaveAll();
-
-            if (saveVal.HasValue)
+            var result = await _userManager.CreateAsync(user, customerRequest.Password);
+            if (result.Succeeded)
             {
-                if (!saveVal.Value)
+                //UPDATE USERTYPEID IN USER TABLE
+                user.UserTypeId = customer.CustomerId;
+                var updateResult = await _userManager.UpdateAsync(user);
+                if (!updateResult.Succeeded)
                 {
                     return new ReturnResponse()
                     {
-                        StatusCode = Utils.SaveNoRowAffected,
-                        StatusMessage = Utils.StatusMessageSaveNoRowAffected
+                        StatusCode = Utils.NotSucceeded,
+                        StatusMessage = Utils.StatusMessageNotSucceeded
                     };
                 }
 
-                var user = new User()
+                //ASSIGN CUSTOMER ROLE TO USER (CUSTOMER)
+                var assignmentResult = await _roleManagementRepository.AssignRolesToUser(new RoleUserAssignmentRequest()
                 {
-                    UserName = customerRequest.EmailAddress,
-                    Email = customerRequest.EmailAddress,
-                    UserTypeId = customer.CustomerId,
-                    UserType = Utils.Customer
-                };
-
-                var password = _helper.RandomPassword();
-
-                var result = await _userManager.CreateAsync(user, customerRequest.Password);
-                if (result.Succeeded)
-                {
-                    //ASSIGN CUSTOMER ROLE TO USER (CUSTOMER)
-                    var assignmentResult = await _userManager.AddToRoleAsync(user, Utils.CustomerRole);
-                    if (assignmentResult.Succeeded)
+                    Users = new List<int>()
                     {
-                        //THEN UPDATE CUSTOMER TABLE USERID COLUMN WITH NEWLY CREATED USER ID
-                        customer.UserId = user.Id;
-                        var customerUpdateResult = _globalRepository.Update(customer);
-                        if (!customerUpdateResult)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.NotSucceeded,
-                                StatusMessage = Utils.StatusMessageNotSucceeded
-                            };
-                        }
-
-                        var customerUpdateSaveResult = await _globalRepository.SaveAll();
-                        if (!customerUpdateSaveResult.HasValue)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.SaveError,
-                                StatusMessage = Utils.StatusMessageSaveError
-                            };
-                        }
-
-                        if (!customerUpdateSaveResult.Value)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.SaveNoRowAffected,
-                                StatusMessage = Utils.StatusMessageSaveNoRowAffected
-                            };
-                        }
-
-                        //SEND MAIL TO CUSTOMER TO CONFIRM EMAIL
-                        var userTokenVal = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        string hashedEmail = _authRepository.GetHashedEmail(user.Email);
-                        var fullToken = userTokenVal + "#" + hashedEmail;
-                        var emailVerificationLink = _authRepository.GetUserEmailVerificationLink(fullToken);
-                        if (emailVerificationLink == null)
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.ObjectNull,
-                                StatusMessage = Utils.StatusMessageObjectNull
-                            };
-                        }
-
-                        var emailMessage1 = "Please click the button below to complete your registration and activate you account.";
-                        var emailMessage2 = "Your Password is "+password;
-                        string emailBody = _globalRepository.GetMailBodyTemplate(customer.FullName, "", emailVerificationLink, emailMessage1, emailMessage2, "activation.html");
-                        var emailSubject = "CONFIRM YOUR EMAIL ADDRESS";
-                        //SEND MAIL TO CUSTOMER TO VERIFY EMAIL
-                        MailModel mailObj = new MailModel(_configuration.GetValue<string>("MercuryMartEmailAddress"), _configuration.GetValue<string>("MercuryMartEmailName"), customer.EmailAddress, emailSubject, emailBody);
-                        var response = await _mailRepository.SendMail(mailObj);
-                        if (response.StatusCode.Equals(HttpStatusCode.Accepted))
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.Success,
-                                StatusMessage = "Registration Successful!!!",
-                                ObjectValue = customer
-                            };
-                        }
-                        else
-                        {
-                            return new ReturnResponse()
-                            {
-                                StatusCode = Utils.MailFailure,
-                                StatusMessage = Utils.StatusMessageMailFailure
-                            };
-                        }
+                        user.Id
+                    },
+                    Roles = new List<int>()
+                    {
+                        roleToFind.Id
                     }
-                    else
+                });
+
+                if (assignmentResult.StatusCode == Utils.Success)
+                {
+                    //SEND MAIL TO CUSTOMER TO CONFIRM EMAIL
+                    var userTokenVal = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    string hashedEmail = _authRepository.GetHashedEmail(user.Email);
+                    var fullToken = userTokenVal + "#" + hashedEmail;
+                    var emailVerificationLink = _authRepository.GetUserEmailVerificationLink(fullToken);
+                    if (emailVerificationLink == null)
+                    {
+                        return new ReturnResponse()
+                        {
+                            StatusCode = Utils.ObjectNull,
+                            StatusMessage = Utils.StatusMessageObjectNull
+                        };
+                    }
+
+                    var emailMessage1 = "Please click the button below to complete your registration and activate you account.";
+                    var emailMessage2 = "";
+                    string emailBody = _globalRepository.GetMailBodyTemplate(customer.FullName, "", emailVerificationLink, emailMessage1, emailMessage2, "activation.html");
+                    var emailSubject = "CONFIRM YOUR EMAIL ADDRESS";
+                    //SEND MAIL TO CUSTOMER TO VERIFY EMAIL
+                    MailModel mailObj = new MailModel(_configuration.GetValue<string>("MercuryMartEmailAddress"), _configuration.GetValue<string>("MercuryMartEmailName"), customer.EmailAddress, emailSubject, emailBody);
+                    var response = await _mailRepository.SendMail(mailObj);
+                    if (!response.StatusCode.Equals(HttpStatusCode.Accepted))
+                    {
+                        return new ReturnResponse()
+                        {
+                            StatusCode = Utils.MailFailure,
+                            StatusMessage = Utils.StatusMessageMailFailure
+                        };
+                    }
+
+                    var customerToReturn = await GetCustomers(customer.CustomerId);
+                    if (customerToReturn.StatusCode != Utils.Success)
                     {
                         return new ReturnResponse()
                         {
                             StatusCode = Utils.NotSucceeded,
-                            StatusMessage = Utils.StatusMessageNotSucceeded
+                            StatusMessage = "Error Occured while Fetching Customer Information"
                         };
                     }
 
+                    return new ReturnResponse()
+                    {
+                        StatusCode = Utils.Success,
+                        StatusMessage = "Registration Successful!!!",
+                        ObjectValue = (Customer)customerToReturn.ObjectValue
+                    };
                 }
 
                 return new ReturnResponse()
@@ -229,8 +210,8 @@ namespace MercuryMartAPI.Repositories
 
             return new ReturnResponse()
             {
-                StatusCode = Utils.SaveError,
-                StatusMessage = Utils.StatusMessageSaveError
+                StatusCode = Utils.NotSucceeded,
+                StatusMessage = Utils.StatusMessageNotSucceeded
             };
         }
        

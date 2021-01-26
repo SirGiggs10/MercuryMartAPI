@@ -102,14 +102,17 @@ namespace MercuryMartAPI
             services.AddTransient<IAuthorizationPolicyProvider, FunctionalityNamePolicy>();
             services.AddTransient<IAuthorizationHandler, FunctionalityNameHandler>();
 
-            services.AddDbContext<DataContext>(options => options.UseLazyLoadingProxies(false).UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<DataContext>(options => options.UseLazyLoadingProxies(false).UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), a => {
+                //a.EnableRetryOnFailure();
+             }));
             services.AddScoped<IAdministratorRepository, AdministratorRepository>();
             services.AddScoped<ICustomerManagementRepository, CustomerManagementRepository>();
             services.AddScoped<IGlobalRepository, GlobalRepository>();
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IMailRepository, MailRepository>();
-            //services.AddScoped<IRoleManagementRepository, RoleManagementRepository>();
+            services.AddScoped<IRoleManagementRepository, RoleManagementRepository>();
             services.AddScoped<ICloudinaryRepository, CloudinaryRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<Helper>();
 
             services.AddHttpContextAccessor();

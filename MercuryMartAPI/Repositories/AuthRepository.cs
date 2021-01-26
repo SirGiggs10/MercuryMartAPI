@@ -63,7 +63,7 @@ namespace MercuryMartAPI.Repositories
                 object userInfo = null;
                 if (user.UserType == Utils.Customer)
                 {
-                    userInfo = _dataContext.Customer.Where(a => a.CustomerId == user.UserTypeId).Include(b => b.CustomerCartItems).FirstOrDefaultAsync();
+                    userInfo = await _dataContext.Customer.Where(a => a.CustomerId == user.UserTypeId).Include(b => b.CustomerCartItems).FirstOrDefaultAsync();
                 }
                 else if (user.UserType == Utils.Administrator)
                 {
@@ -104,7 +104,8 @@ namespace MercuryMartAPI.Repositories
 
             return new ReturnResponse()
             {
-                StatusCode = Utils.SignInError
+                StatusCode = Utils.SignInError,
+                StatusMessage = Utils.StatusMessageSignInError
             };
         }
      
@@ -602,6 +603,7 @@ namespace MercuryMartAPI.Repositories
             return new ReturnResponse()
             {
                 StatusCode = Utils.Success,
+                StatusMessage = Utils.StatusMessageSuccess,
                 ObjectValue = new UserDetails
                 {
                     Token = GenerateJwtToken(user, _configuration.GetValue<string>("AppSettings:Secret")),
@@ -654,6 +656,15 @@ namespace MercuryMartAPI.Repositories
             }
 
             var loggedInUser = _globalRepository.GetUserInformation();
+            if(loggedInUser.UserTypeId == Utils.UserClaim_Null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.UserClaimNotFound,
+                    StatusMessage = Utils.StatusMessageUserClaimNotFound
+                };
+            }
+
             var user = await _userManager.FindByIdAsync(loggedInUser.UserId);
 
             if (user != null)
@@ -697,12 +708,14 @@ namespace MercuryMartAPI.Repositories
                     var response = await _mailRepository.SendMail(mailObj);
                     if (response.StatusCode.Equals(HttpStatusCode.Accepted))
                     {
-                        return new ReturnResponse()
+                        //AFTER PASSWORD TOKEN CONFIRMATION...LOG USER IN
+                        var loginResult = await LoginUser(new UserForLoginDto()
                         {
-                            StatusCode = Utils.Success,
-                            StatusMessage = "Password Changed Successfully",
-                            ObjectValue = user
-                        };
+                            EmailAddress = user.Email,
+                            Password = changePasswordRequest.NewPassword
+                        }, _configuration.GetValue<string>("AppSettings:Secret"));
+
+                        return loginResult;
                     }
                     else
                     {
@@ -718,7 +731,7 @@ namespace MercuryMartAPI.Repositories
                     return new ReturnResponse()
                     {
                         StatusCode = Utils.NotSucceeded,
-                        StatusMessage = Utils.StatusMessageNotSucceeded
+                        StatusMessage = (result.Errors.FirstOrDefault() == null) ? Utils.StatusMessageNotSucceeded : result.Errors.FirstOrDefault().Description
                     };
                 }
             }

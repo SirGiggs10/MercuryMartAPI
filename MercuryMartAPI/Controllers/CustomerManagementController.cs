@@ -67,7 +67,7 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         // GET: api/CustomerManagement/5
         [RequiredFunctionalityName("GetCustomerManagement")]
-        [HttpGet("{customerId}}")]
+        [HttpGet("{customerId}")]
         public async Task<ActionResult<IEnumerable<Customer>>> GetCustomerManagement([FromRoute] int customerId)
         {
             var result = await _customerManagementRepository.GetCustomers(customerId);
@@ -153,7 +153,7 @@ namespace MercuryMartAPI.Controllers
 
             if (result.StatusCode == Utils.Success)
             {
-                var customer = _mapper.Map<CustomerResponse>((Customer)result.ObjectValue);
+                var customer = _mapper.Map<List<CustomerResponse>>((List<Customer>)result.ObjectValue);
                 result.ObjectValue = customer;
                 await dbTransaction.CommitAsync();
 

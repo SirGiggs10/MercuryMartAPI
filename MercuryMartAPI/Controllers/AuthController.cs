@@ -134,6 +134,21 @@ namespace MercuryMartAPI.Controllers
 
             if (result.StatusCode == Utils.Success)
             {
+                result.StatusMessage = "Password Changed Successfully!!!";
+                var userDetails = (UserDetails)result.ObjectValue;
+                var userInfoToReturn = _mapper.Map<UserLoginResponse>(userDetails);
+                if (userDetails.User.UserType == Utils.Customer)
+                {
+                    //CUSTOMER
+                    userInfoToReturn.UserProfileInformation = _mapper.Map<CustomerResponse>((Customer)userDetails.userProfile);
+                }
+                else
+                {
+                    //ADMINISTRATOR
+                    userInfoToReturn.UserProfileInformation = _mapper.Map<AdministratorResponse>((Administrator)userDetails.userProfile);
+                }
+
+                result.ObjectValue = userInfoToReturn;
                 await dbTransaction.CommitAsync();
 
                 return StatusCode(StatusCodes.Status200OK, result);

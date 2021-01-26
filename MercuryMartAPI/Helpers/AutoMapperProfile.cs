@@ -9,6 +9,7 @@ using MercuryMartAPI.Dtos.Customer;
 using MercuryMartAPI.Dtos.Auth;
 using MercuryMartAPI.Dtos.RoleFunctionality;
 using MercuryMartAPI.Dtos.Administrator;
+using MercuryMartAPI.Dtos.Category;
 
 namespace MercuryMartAPI.Helpers
 {
@@ -16,7 +17,9 @@ namespace MercuryMartAPI.Helpers
     {
         public AutoMapperProfile()
         {
+            CreateMap<CustomerRequest, Customer>();
             CreateMap<Customer, CustomerResponse>();
+            CreateMap<CustomerToUpdate, Customer>();
 
             CreateMap<AdministratorRequest, Administrator>();
             CreateMap<Administrator, AdministratorResponse>();
@@ -45,6 +48,10 @@ namespace MercuryMartAPI.Helpers
             CreateMap<CustomerCartItem, CustomerCartItemResponse>();
 
             CreateMap<FunctionalityRole, FunctionalityRoleResponse>();
+
+            CreateMap<CategoryRequest, Category>();
+            CreateMap<Category, CategoryResponse>();
+            CreateMap<CategoryToUpdate, Category>();
         }
     }
 }

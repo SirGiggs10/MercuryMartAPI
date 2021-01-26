@@ -43,10 +43,10 @@ namespace MercuryMartAPI.Helpers
         public const string StatusMessageSaveNoRowAffected = "";
         public const string StatusMessageNotSucceeded = "Action on this Object did not Succeed";
         public const string StatusMessageObjectExists = "Object already Exists";
-        public const string StatusMessageBadRequest = "";
-        public const string StatusMessageSignInError = "";
+        public const string StatusMessageBadRequest = "You cannot perform the Operation you are trying to do";
+        public const string StatusMessageSignInError = "Error Signing In. Incorrect Email/Password";
         public const string StatusMessageEmailAlreadyConfirmed = "The Email Address has already been Confirmed by MercuryMart";
-        public const string StatusMessagePreviousPasswordStorageError = "";
+        public const string StatusMessagePreviousPasswordStorageError = "Previous Password is the same as New Password";
         public const string StatusMessageNewPasswordError = "";
         public const string StatusMessageInvalidUserType = "The User Type is Invalid";
         public const string StatusMessageRoleAssignmentError = "Unable to Assign Role";
@@ -69,5 +69,7 @@ namespace MercuryMartAPI.Helpers
         //ORDER/DELIVERY STATUS
         public const int CurrentOrderNumberStatus_Pending = 1;
         public const int CurrentOrderNumberStatus_Completed = 2;
+
+        public const int UserClaim_Null = 0;
     }
 }
