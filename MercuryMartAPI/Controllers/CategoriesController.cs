@@ -47,7 +47,7 @@ namespace MercuryMartAPI.Controllers
             {
                 result.ObjectValue = _mapper.Map<List<CategoryResponse>>((List<Category>)result.ObjectValue);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -69,7 +69,7 @@ namespace MercuryMartAPI.Controllers
             {
                 result.ObjectValue = _mapper.Map<CategoryResponse>((Category)result.ObjectValue);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -95,7 +95,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<CategoryResponse>((Category)result.ObjectValue);
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -123,7 +123,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<CategoryResponse>((Category)result.ObjectValue);
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -149,7 +149,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<CategoryResponse>>((List<Category>)result.ObjectValue);
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {

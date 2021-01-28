@@ -10,6 +10,7 @@ using MercuryMartAPI.Dtos.Auth;
 using MercuryMartAPI.Dtos.RoleFunctionality;
 using MercuryMartAPI.Dtos.Administrator;
 using MercuryMartAPI.Dtos.Category;
+using MercuryMartAPI.Dtos.Product;
 
 namespace MercuryMartAPI.Helpers
 {
@@ -52,6 +53,11 @@ namespace MercuryMartAPI.Helpers
             CreateMap<CategoryRequest, Category>();
             CreateMap<Category, CategoryResponse>();
             CreateMap<CategoryToUpdate, Category>();
+            CreateMap<Category, CategoryResponseForProduct>();
+
+            CreateMap<ProductRequest, Product>();
+            CreateMap<Product, ProductResponse>();
+            CreateMap<ProductToUpdate, Product>();
         }
     }
 }

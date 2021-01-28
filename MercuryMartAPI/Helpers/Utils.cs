@@ -71,5 +71,7 @@ namespace MercuryMartAPI.Helpers
         public const int CurrentOrderNumberStatus_Completed = 2;
 
         public const int UserClaim_Null = 0;
+
+        public const double Zero_Price = 0.0;
     }
 }

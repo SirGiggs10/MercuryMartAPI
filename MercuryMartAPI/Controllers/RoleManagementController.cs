@@ -49,7 +49,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = listOfRoles;
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -76,7 +76,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<RoleResponse>>(roleList);
                 Response.AddPagination(roles.CurrentPage, roles.PageSize, roles.TotalCount, roles.TotalPages);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -95,9 +95,9 @@ namespace MercuryMartAPI.Controllers
 
             if (result.StatusCode == Utils.Success)
             {
-                result.ObjectValue = _mapper.Map<RoleResponse>((Role)result.ObjectValue); ;
+                result.ObjectValue = _mapper.Map<RoleResponse>((Role)result.ObjectValue);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -120,7 +120,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<RoleResponse>>(((List<Role>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -145,7 +145,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<RoleResponse>>(((List<Role>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -169,7 +169,7 @@ namespace MercuryMartAPI.Controllers
             {
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -195,7 +195,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = listOfProjectModules;
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -220,7 +220,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<ProjectModuleResponse>>(projectModules.ToList());
                 Response.AddPagination(projectModules.CurrentPage, projectModules.PageSize, projectModules.TotalCount, projectModules.TotalPages);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -241,7 +241,7 @@ namespace MercuryMartAPI.Controllers
             {
                 result.ObjectValue = _mapper.Map<ProjectModuleResponse>((ProjectModule)result.ObjectValue);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -264,7 +264,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<ProjectModuleResponse>>(((List<ProjectModule>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -291,7 +291,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = listOfFunctionalities;
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -316,7 +316,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<FunctionalityResponse>>(functionalities.ToList());
                 Response.AddPagination(functionalities.CurrentPage, functionalities.PageSize, functionalities.TotalCount, functionalities.TotalPages);
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -337,7 +337,7 @@ namespace MercuryMartAPI.Controllers
             {
                 result.ObjectValue = _mapper.Map<FunctionalityResponse>((Functionality)result.ObjectValue);
                 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -360,7 +360,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<FunctionalityResponse>>(((List<Functionality>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
@@ -385,7 +385,7 @@ namespace MercuryMartAPI.Controllers
                 result.ObjectValue = _mapper.Map<List<FunctionalityRoleResponse>>(((List<FunctionalityRole>)result.ObjectValue));
                 await dbTransaction.CommitAsync();
 
-                return StatusCode(StatusCodes.Status200OK, result.ObjectValue);
+                return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {

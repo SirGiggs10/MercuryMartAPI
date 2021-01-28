@@ -9,6 +9,11 @@ using MercuryMartAPI.Data;
 using MercuryMartAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using MercuryMartAPI.Helpers.AuthorizationMiddleware;
+using MercuryMartAPI.Dtos.General;
+using MercuryMartAPI.Helpers;
+using MercuryMartAPI.Dtos.Product;
+using MercuryMartAPI.Interfaces;
+using AutoMapper;
 
 namespace MercuryMartAPI.Controllers
 {
@@ -17,102 +22,139 @@ namespace MercuryMartAPI.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly DataContext _dataContext;
+        private readonly IProductRepository _productRepository;
+        private readonly IMapper _mapper;
 
-        public ProductsController(DataContext context)
+        public ProductsController(DataContext dataContext, IProductRepository productRepository, IMapper mapper)
         {
-            _context = context;
+            _dataContext = dataContext;
+            _productRepository = productRepository;
+            _mapper = mapper;
         }
 
         // GET: api/Products
-        [RequiredFunctionalityName("GetProduct")]
+        [RequiredFunctionalityName("GetProducts")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProduct()
+        public async Task<ActionResult<ReturnResponse>> GetProduct([FromQuery] UserParams userParams)
         {
-            return await _context.Product.ToListAsync();
+            var result = await _productRepository.GetProduct(userParams);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<List<ProductResponse>>((List<Product>)result.ObjectValue);
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
         // GET: api/Products/5
         [RequiredFunctionalityName("GetProduct")]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        [HttpGet("{productId}")]
+        public async Task<ActionResult<ReturnResponse>> GetProduct([FromRoute] int productId)
         {
-            var product = await _context.Product.FindAsync(id);
+            var result = await _productRepository.GetProduct(productId);
 
-            if (product == null)
+            if (result.StatusCode == Utils.Success)
             {
-                return NotFound();
-            }
+                result.ObjectValue = _mapper.Map<ProductResponse>((Product)result.ObjectValue);
 
-            return product;
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
+
+        // GET: api/Products/5
+        [RequiredFunctionalityName("GetProductByCategory")]
+        [HttpGet("Category/{categoryId}")]
+        public async Task<ActionResult<ReturnResponse>> GetProductByCategory([FromRoute] int categoryId, [FromQuery] UserParams userParams)
+        {
+            var result = await _productRepository.GetProductByCategory(categoryId, userParams);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<List<ProductResponse>>((List<Product>)result.ObjectValue);
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
         // PUT: api/Products/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [RequiredFunctionalityName("GetProduct")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, Product product)
+        [RequiredFunctionalityName("PutProduct")]
+        [HttpPut("{productId}")]
+        public async Task<ActionResult<ReturnResponse>> PutProduct([FromRoute] int productId, [FromForm] ProductToUpdate productToUpdate)
         {
-            if (id != product.ProductId)
-            {
-                return BadRequest();
-            }
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _productRepository.UpdateProduct(productId, productToUpdate);
 
-            _context.Entry(product).State = EntityState.Modified;
-
-            try
+            if (result.StatusCode == Utils.Success)
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                result.ObjectValue = _mapper.Map<ProductResponse>((Product)result.ObjectValue);
+                await dbTransaction.CommitAsync();
 
-            return NoContent();
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
         // POST: api/Products
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [RequiredFunctionalityName("GetProduct")]
+        [RequiredFunctionalityName("PostProduct")]
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<ReturnResponse>> PostProduct([FromForm] ProductRequest productRequest)
         {
-            _context.Product.Add(product);
-            await _context.SaveChangesAsync();
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _productRepository.CreateProduct(productRequest);
 
-            return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<ProductResponse>((Product)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
         // DELETE: api/Products/5
-        [RequiredFunctionalityName("GetProduct")]
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Product>> DeleteProduct(int id)
+        [RequiredFunctionalityName("DeleteProduct")]
+        [HttpPost("Delete")]
+        public async Task<ActionResult<ReturnResponse>> DeleteProduct([FromBody] List<int> productsIds)
         {
-            var product = await _context.Product.FindAsync(id);
-            if (product == null)
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _productRepository.DeleteProduct(productsIds);
+
+            if (result.StatusCode == Utils.Success)
             {
-                return NotFound();
+                result.ObjectValue = _mapper.Map<List<ProductResponse>>((List<Product>)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
             }
-
-            _context.Product.Remove(product);
-            await _context.SaveChangesAsync();
-
-            return product;
-        }
-
-        private bool ProductExists(int id)
-        {
-            return _context.Product.Any(e => e.ProductId == id);
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
     }
 }
