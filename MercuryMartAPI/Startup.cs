@@ -121,7 +121,7 @@ namespace MercuryMartAPI
             services.AddControllers();
             services.AddMvc().AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
 
-            string[] origins = new string[] { "http://localhost:4200", "http://localhost:4300", "http://localhost:4400",
+            string[] origins = new string[] { "http://localhost:3000", "http://test.html:1", "http://localhost:4200", "http://localhost:4300", "http://localhost:4400",
             "http://localhost:4500", "http://localhost:4600", "http://localhost:4700", "http://localhost:4800", "http://localhost:4900",
             "http://localhost:7200", "http://localhost:7300", "http://localhost:7400", "http://localhost:7500", "http://localhost:7600",
             "http://localhost:7700", "http://localhost:7800", "http://localhost:7900", "https://qa.ayuda.ng",
