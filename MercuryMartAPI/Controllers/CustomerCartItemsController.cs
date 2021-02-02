@@ -9,6 +9,11 @@ using MercuryMartAPI.Data;
 using MercuryMartAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using MercuryMartAPI.Helpers.AuthorizationMiddleware;
+using MercuryMartAPI.Interfaces;
+using MercuryMartAPI.Dtos.General;
+using MercuryMartAPI.Dtos.Customer;
+using MercuryMartAPI.Helpers;
+using AutoMapper;
 
 namespace MercuryMartAPI.Controllers
 {
@@ -17,102 +22,117 @@ namespace MercuryMartAPI.Controllers
     [ApiController]
     public class CustomerCartItemsController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly DataContext _dataContext;
+        private readonly ICustomerCartItemRepository _customerCartItemRepository;
+        private readonly IMapper _mapper;
 
-        public CustomerCartItemsController(DataContext context)
+        public CustomerCartItemsController(DataContext dataContext, ICustomerCartItemRepository customerCartItemRepository, IMapper mapper)
         {
-            _context = context;
+            _dataContext = dataContext;
+            _customerCartItemRepository = customerCartItemRepository;
+            _mapper = mapper;
         }
 
+        /// <summary>
+        /// GET ALL CART ITEMS FOR A CUSTOMER IN THE SYSTEM
+        /// </summary>
         // GET: api/CustomerCartItems
         [RequiredFunctionalityName("GetCustomerCartItem")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CustomerCartItem>>> GetCustomerCartItem()
+        public async Task<ActionResult<ReturnResponse>> GetCustomerCartItem()
         {
-            return await _context.CustomerCartItem.ToListAsync();
+            var result = await _customerCartItemRepository.GetCustomerCartItem();
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<List<CustomerCartItemResponse>>((List<CustomerCartItem>)result.ObjectValue);
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
-        // GET: api/CustomerCartItems/5
-        [RequiredFunctionalityName("GetCustomerCartItem")]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CustomerCartItem>> GetCustomerCartItem(int id)
-        {
-            var customerCartItem = await _context.CustomerCartItem.FindAsync(id);
-
-            if (customerCartItem == null)
-            {
-                return NotFound();
-            }
-
-            return customerCartItem;
-        }
-
-        // PUT: api/CustomerCartItems/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [RequiredFunctionalityName("GetCustomerCartItem")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCustomerCartItem(int id, CustomerCartItem customerCartItem)
-        {
-            if (id != customerCartItem.CustomerCartItemId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(customerCartItem).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CustomerCartItemExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
+        /// <summary>
+        /// ADD AN ITEM TO CART FOR A CUSTOMER IN THE SYSTEM
+        /// </summary>
         // POST: api/CustomerCartItems
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [RequiredFunctionalityName("GetCustomerCartItem")]
+        [RequiredFunctionalityName("PostCustomerCartItem")]
         [HttpPost]
-        public async Task<ActionResult<CustomerCartItem>> PostCustomerCartItem(CustomerCartItem customerCartItem)
+        public async Task<ActionResult<ReturnResponse>> PostCustomerCartItem([FromBody] CustomerCartItemRequest customerCartItemRequest)
         {
-            _context.CustomerCartItem.Add(customerCartItem);
-            await _context.SaveChangesAsync();
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _customerCartItemRepository.CreateCustomerCartItem(customerCartItemRequest);
 
-            return CreatedAtAction("GetCustomerCartItem", new { id = customerCartItem.CustomerCartItemId }, customerCartItem);
-        }
-
-        // DELETE: api/CustomerCartItems/5
-        [RequiredFunctionalityName("GetCustomerCartItem")]
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<CustomerCartItem>> DeleteCustomerCartItem(int id)
-        {
-            var customerCartItem = await _context.CustomerCartItem.FindAsync(id);
-            if (customerCartItem == null)
+            if (result.StatusCode == Utils.Success)
             {
-                return NotFound();
+                result.ObjectValue = _mapper.Map<CustomerCartItemResponse>((CustomerCartItem)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
             }
+            else
+            {
+                await dbTransaction.RollbackAsync();
 
-            _context.CustomerCartItem.Remove(customerCartItem);
-            await _context.SaveChangesAsync();
-
-            return customerCartItem;
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
-        private bool CustomerCartItemExists(int id)
+        /// <summary>
+        /// DELETE AN ITEM FROM THE CART FOR A CUSTOMER IN THE SYSTEM
+        /// </summary>
+        // DELETE: api/CustomerCartItems/5
+        [RequiredFunctionalityName("DeleteCustomerCartItem")]
+        [HttpDelete("{customerCartItemId}")]
+        public async Task<ActionResult<ReturnResponse>> DeleteCustomerCartItem(int customerCartItemId)
         {
-            return _context.CustomerCartItem.Any(e => e.CustomerCartItemId == id);
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _customerCartItemRepository.DeleteCustomerCartItem(customerCartItemId);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<CustomerCartItemResponse>((CustomerCartItem)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
+
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
+
+        /// <summary>
+        /// DELETE ALL CART ITEMS FOR A CUSTOMER IN THE SYSTEM
+        /// </summary>
+        // DELETE: api/CustomerCartItems/5
+        [RequiredFunctionalityName("DeleteCustomerCartItems")]
+        [HttpDelete]
+        public async Task<ActionResult<ReturnResponse>> DeleteCustomerCartItem()
+        {
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _customerCartItemRepository.DeleteCustomerCartItem();
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<List<CustomerCartItemResponse>>((List<CustomerCartItem>)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
+
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
     }
 }

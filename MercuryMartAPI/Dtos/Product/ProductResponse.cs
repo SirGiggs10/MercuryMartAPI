@@ -12,6 +12,7 @@ namespace MercuryMartAPI.Dtos.Product
         public string ProductName { get; set; }
         public string ProductDescription { get; set; }
         public double ProductPrice { get; set; }
+        public double ProductCost { get; set; }
         public int CategoryId { get; set; }
         public string ProductSerialNumber { get; set; }
         public string AttachmentLink { get; set; }

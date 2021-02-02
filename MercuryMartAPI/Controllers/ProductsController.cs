@@ -33,6 +33,9 @@ namespace MercuryMartAPI.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// GET ALL PRODUCTS IN THE SYSTEM
+        /// </summary>
         // GET: api/Products
         [RequiredFunctionalityName("GetProducts")]
         [HttpGet]
@@ -52,6 +55,9 @@ namespace MercuryMartAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GET ONE PRODUCT IN THE SYSTEM
+        /// </summary>
         // GET: api/Products/5
         [RequiredFunctionalityName("GetProduct")]
         [HttpGet("{productId}")]
@@ -71,6 +77,9 @@ namespace MercuryMartAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// GET ALL PRODUCTS IN THE SYSTEM BY CATEGORY
+        /// </summary>
         // GET: api/Products/5
         [RequiredFunctionalityName("GetProductByCategory")]
         [HttpGet("Category/{categoryId}")]
@@ -90,6 +99,9 @@ namespace MercuryMartAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// UPDATE A PRODUCT INFORMATION IN THE SYSTEM
+        /// </summary>
         // PUT: api/Products/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
@@ -113,6 +125,9 @@ namespace MercuryMartAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// CREATE A PRODUCT IN THE SYSTEM
+        /// </summary>
         // POST: api/Products
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
@@ -136,6 +151,9 @@ namespace MercuryMartAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// DELETE A PRODUCT IN THE SYSTEM
+        /// </summary>
         // DELETE: api/Products/5
         [RequiredFunctionalityName("DeleteProduct")]
         [HttpPost("Delete")]

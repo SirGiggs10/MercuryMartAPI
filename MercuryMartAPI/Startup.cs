@@ -114,6 +114,7 @@ namespace MercuryMartAPI
             services.AddScoped<ICloudinaryRepository, CloudinaryRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ICustomerCartItemRepository, CustomerCartItemRepository>();
             services.AddScoped<Helper>();
 
             services.AddHttpContextAccessor();
