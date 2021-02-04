@@ -29,5 +29,6 @@ namespace MercuryMartAPI.Models
         public DateTimeOffset? DeletedAt { get; set; }
 
         public virtual Category Category { get; set; }
+        public virtual CustomerOrderGroupItem CustomerOrderGroupItem { get; set; }
     }
 }

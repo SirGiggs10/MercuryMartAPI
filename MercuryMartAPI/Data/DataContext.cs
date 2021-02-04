@@ -42,6 +42,7 @@ namespace MercuryMartAPI.Data
             builder.Entity<CustomerOrderGroup>().HasOne(a => a.CustomerOrder).WithMany(b => b.CustomerOrderGroups).HasForeignKey(c => c.CustomerOrderId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<CustomerOrderGroupItem>().HasOne(a => a.CustomerOrderGroup).WithMany(b => b.CustomerOrderGroupItems).HasForeignKey(c => c.CustomerOrderGroupId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<CustomerOrderGroupItem>().HasOne(a => a.Product).WithOne(b => b.CustomerOrderGroupItem).HasForeignKey<CustomerOrderGroupItem>(c => c.ProductId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Functionality>().HasOne(a => a.ProjectModule).WithMany(b => b.Functionalities).HasForeignKey(c => c.ProjectModuleId).IsRequired(false).OnDelete(DeleteBehavior.Cascade);
 

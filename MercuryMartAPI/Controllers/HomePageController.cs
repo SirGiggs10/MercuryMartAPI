@@ -26,9 +26,9 @@ namespace MercuryMartAPI.Controllers
         }
 
         /// <summary>
-        /// GET ALL CATEGORIES IN THE SYSTEM
+        /// GET HOMEPAGE PRODUCTS LIST WITH QUANTITY IN STOCK
         /// </summary>
-        // GET: api/Categories
+        // GET: api/HomePage
         [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<ReturnResponse>> GetHomePage()
