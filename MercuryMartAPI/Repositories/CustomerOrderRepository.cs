@@ -187,6 +187,16 @@ namespace MercuryMartAPI.Repositories
 
         public async Task<ReturnResponse> GetCustomerOrder(int customerOrderId)
         {
+            var loggedInUser = _globalRepository.GetUserInformation();
+            if (loggedInUser.UserTypeId == Utils.UserClaim_Null)
+            {
+                return new ReturnResponse()
+                {
+                    StatusCode = Utils.UserClaimNotFound,
+                    StatusMessage = Utils.StatusMessageUserClaimNotFound
+                };
+            }
+
             var customerOrder = await _dataContext.CustomerOrder.Where(a => a.CustomerOrderId == customerOrderId).Include(b => b.CustomerOrderGroups).ThenInclude(c => c.CustomerOrderGroupItems).FirstOrDefaultAsync();
             if(customerOrder == null)
             {
@@ -194,16 +204,6 @@ namespace MercuryMartAPI.Repositories
                 {
                     StatusCode = Utils.NotFound,
                     StatusMessage = Utils.StatusMessageNotFound
-                };
-            }
-
-            var loggedInUser = _globalRepository.GetUserInformation();
-            if(loggedInUser.UserTypeId == Utils.UserClaim_Null)
-            {
-                return new ReturnResponse()
-                {
-                    StatusCode = Utils.UserClaimNotFound,
-                    StatusMessage = Utils.StatusMessageUserClaimNotFound
                 };
             }
 
