@@ -11,6 +11,9 @@ using MercuryMartAPI.Dtos.RoleFunctionality;
 using MercuryMartAPI.Dtos.Administrator;
 using MercuryMartAPI.Dtos.Category;
 using MercuryMartAPI.Dtos.Product;
+using MercuryMartAPI.Dtos.CustomerOrder;
+using MercuryMartAPI.Dtos.CustomerOrder.CustomerOrderGroup;
+using MercuryMartAPI.Dtos.CustomerOrder.CustomerOrderGroup.CustomerOrderGroupItem;
 
 namespace MercuryMartAPI.Helpers
 {
@@ -58,6 +61,16 @@ namespace MercuryMartAPI.Helpers
             CreateMap<ProductRequest, Product>();
             CreateMap<Product, ProductResponse>();
             CreateMap<ProductToUpdate, Product>();
+
+            CreateMap<CustomerOrderRequest, CustomerOrder>();
+            CreateMap<CustomerOrder, CustomerOrderResponse>();
+            CreateMap<CustomerOrderToUpdate, CustomerOrder>();
+            CreateMap<CustomerOrderGroupRequest, CustomerOrderGroup>();
+            CreateMap<CustomerOrderGroup, CustomerOrderGroupResponse>();
+            CreateMap<CustomerOrderGroupToUpdate, CustomerOrderGroup>();
+            CreateMap<CustomerOrderGroupItemRequest, CustomerOrderGroupItem>();
+            CreateMap<CustomerOrderGroupItem, CustomerOrderGroupItemResponse>();
+            CreateMap<CustomerOrderGroupItemToUpdate, CustomerOrderGroupItem>();
         }
     }
 }

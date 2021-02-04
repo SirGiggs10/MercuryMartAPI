@@ -9,6 +9,11 @@ using MercuryMartAPI.Data;
 using MercuryMartAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using MercuryMartAPI.Helpers.AuthorizationMiddleware;
+using MercuryMartAPI.Dtos.General;
+using MercuryMartAPI.Helpers;
+using MercuryMartAPI.Interfaces;
+using AutoMapper;
+using MercuryMartAPI.Dtos.CustomerOrder;
 
 namespace MercuryMartAPI.Controllers
 {
@@ -17,36 +22,61 @@ namespace MercuryMartAPI.Controllers
     [ApiController]
     public class CustomerOrdersController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly DataContext _dataContext;
+        private readonly ICustomerOrderRepository _customerOrderRepository;
+        private readonly IMapper _mapper;
 
-        public CustomerOrdersController(DataContext context)
+        public CustomerOrdersController(DataContext dataContext, ICustomerOrderRepository customerOrderRepository, IMapper mapper)
         {
-            _context = context;
+            _dataContext = dataContext;
+            _customerOrderRepository = customerOrderRepository;
+            _mapper = mapper;
         }
 
+        /// <summary>
+        /// GET ALL CUSTOMER ORDERS BY ONE CUSTOMER IN THE SYSTEM
+        /// </summary>
         // GET: api/CustomerOrders
-        [RequiredFunctionalityName("DeleteCustomerOrder")]
+        [RequiredFunctionalityName("GetCustomerOrders")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CustomerOrder>>> GetCustomerOrder()
+        public async Task<ActionResult<ReturnResponse>> GetCustomerOrder([FromQuery] UserParams userParams)
         {
-            return await _context.CustomerOrder.ToListAsync();
-        }
+            var result = await _customerOrderRepository.GetCustomerOrder(userParams);
 
-        // GET: api/CustomerOrders/5
-        [RequiredFunctionalityName("DeleteCustomerOrder")]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CustomerOrder>> GetCustomerOrder(int id)
-        {
-            var customerOrder = await _context.CustomerOrder.FindAsync(id);
-
-            if (customerOrder == null)
+            if (result.StatusCode == Utils.Success)
             {
-                return NotFound();
-            }
+                result.ObjectValue = _mapper.Map<List<CustomerOrderResponse>>((List<CustomerOrder>)result.ObjectValue);
 
-            return customerOrder;
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
 
+        /// <summary>
+        /// GET ONE CUSTOMER ORDER IN THE SYSTEM
+        /// </summary>
+        // GET: api/CustomerOrders/5
+        [RequiredFunctionalityName("GetCustomerOrder")]
+        [HttpGet("{customerOrderId}")]
+        public async Task<ActionResult<ReturnResponse>> GetCustomerOrder(int customerOrderId)
+        {
+            var result = await _customerOrderRepository.GetCustomerOrder(customerOrderId);
+
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<CustomerOrderResponse>((CustomerOrder)result.ObjectValue);
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
+        }
+        /*
         // PUT: api/CustomerOrders/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
@@ -54,65 +84,44 @@ namespace MercuryMartAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomerOrder(int id, CustomerOrder customerOrder)
         {
-            if (id != customerOrder.CustomerOrderId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(customerOrder).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CustomerOrderExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            
         }
-
+        */
+        /// <summary>
+        /// CREATE A CUSTOMER ORDER IN THE SYSTEM
+        /// </summary>
         // POST: api/CustomerOrders
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [RequiredFunctionalityName("DeleteCustomerOrder")]
+        [RequiredFunctionalityName("PostCustomerOrder")]
         [HttpPost]
-        public async Task<ActionResult<CustomerOrder>> PostCustomerOrder(CustomerOrder customerOrder)
+        public async Task<ActionResult<ReturnResponse>> PostCustomerOrder([FromBody] CustomerOrderRequest customerOrderRequest)
         {
-            _context.CustomerOrder.Add(customerOrder);
-            await _context.SaveChangesAsync();
+            var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            var result = await _customerOrderRepository.CreateCustomerOrder(customerOrderRequest);
 
-            return CreatedAtAction("GetCustomerOrder", new { id = customerOrder.CustomerOrderId }, customerOrder);
+            if (result.StatusCode == Utils.Success)
+            {
+                result.ObjectValue = _mapper.Map<CustomerOrderResponse>((CustomerOrder)result.ObjectValue);
+                await dbTransaction.CommitAsync();
+
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            else
+            {
+                await dbTransaction.RollbackAsync();
+
+                return StatusCode(StatusCodes.Status400BadRequest, result);
+            }
         }
-
+        /*
         // DELETE: api/CustomerOrders/5
         [RequiredFunctionalityName("DeleteCustomerOrder")]
         [HttpDelete("{id}")]
         public async Task<ActionResult<CustomerOrder>> DeleteCustomerOrder(int id)
         {
-            var customerOrder = await _context.CustomerOrder.FindAsync(id);
-            if (customerOrder == null)
-            {
-                return NotFound();
-            }
-
-            _context.CustomerOrder.Remove(customerOrder);
-            await _context.SaveChangesAsync();
-
-            return customerOrder;
+            
         }
-
-        private bool CustomerOrderExists(int id)
-        {
-            return _context.CustomerOrder.Any(e => e.CustomerOrderId == id);
-        }
+        */
     }
 }

@@ -15,6 +15,7 @@ namespace MercuryMartAPI.Models
         [Key]
         public int CustomerOrderId { get; set; }
         public int CustomerId { get; set; }
+        public string OrderName { get; set; }
         public int OrderStatus { get; set; }
         public int DeliveryStatus { get; set; }
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

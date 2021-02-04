@@ -20,7 +20,7 @@ namespace MercuryMartAPI.Models
         public double ProductCost { get; set; }
         public int CategoryId { get; set; }
         public string ProductSerialNumber { get; set; }
-        //public int? AssignedTo { get; set; }
+        public int? AssignedTo { get; set; }
         public string AttachmentLink { get; set; }
         public string AttachmentPublicId { get; set; }
         public string AttachmentFileName { get; set; }

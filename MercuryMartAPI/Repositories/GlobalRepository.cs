@@ -191,18 +191,8 @@ namespace MercuryMartAPI.Repositories
             {
                 body = reader.ReadToEnd();
             }
-            if (templateSrc == "resolve-ticket.html")
-            {
-                body = body.Replace("{firstname}", recipientFirstName);
-                body = body.Replace("{lastname}", recipientLastName);
-                body = body.Replace("{link}", link);
-                body = body.Replace("{message1}", message1);
-                body = body.Replace("{message2}", message2);
-                body = body.Replace("{LINKURL}", "https://ayuda.ng/");
-                body = body.Replace("{ayuda_logo}", Path.Combine(webRoot, "img/AyudaLogo.png"));
-                body = body.Replace("{ayuda_logoLight}", Path.Combine(webRoot, "img/AyudaLogoLight.png"));
-            }
-            else if (templateSrc == "raise-ticket.html")
+            
+            if (templateSrc == "activation.html")
             {
                 if (recipientFirstName != "" || recipientLastName != "")
                 {
@@ -212,37 +202,6 @@ namespace MercuryMartAPI.Repositories
                 body = body.Replace("{link}", link);
                 body = body.Replace("{message1}", message1);
                 body = body.Replace("{message2}", message2);
-                body = body.Replace("{LINKURL}", "https://ayuda.ng/");
-                body = body.Replace("{ayuda_logo}", Path.Combine(webRoot, "img/AyudaLogo.png"));
-                body = body.Replace("{ayuda_logoLight}", Path.Combine(webRoot, "img/AyudaLogoLight.png"));
-            }
-            else if(templateSrc == "bulkIndex.html")
-            {
-                if (recipientFirstName != "" || recipientLastName != "")
-                {
-                    body = body.Replace("{firstname}", recipientFirstName);
-                    body = body.Replace("{lastname}", recipientLastName);
-                }
-                body = body.Replace("{link}", link);
-                body = body.Replace("{message1}", message1);
-                body = body.Replace("{message2}", message2);
-                body = body.Replace("{LINKURL}", "https://ayuda.ng/");
-                body = body.Replace("{ayuda_logo}", Path.Combine(webRoot, "img/AyudaLogo.png"));
-                body = body.Replace("{ayuda_logoLight}", Path.Combine(webRoot, "img/AyudaLogoLight.png"));
-            }
-            else if (templateSrc == "activation.html")
-            {
-                if (recipientFirstName != "" || recipientLastName != "")
-                {
-                    body = body.Replace("{firstname}", recipientFirstName);
-                    body = body.Replace("{lastname}", recipientLastName);
-                }
-                body = body.Replace("{link}", link);
-                body = body.Replace("{message1}", message1);
-                body = body.Replace("{message2}", message2);
-                body = body.Replace("{LINKURL}", "https://ayuda.ng/");
-                body = body.Replace("{ayuda_logo}", Path.Combine(webRoot, "img/AyudaLogo.png"));
-                body = body.Replace("{ayuda_logoLight}", Path.Combine(webRoot, "img/AyudaLogoLight.png"));
             }
             else
             {
@@ -254,10 +213,8 @@ namespace MercuryMartAPI.Repositories
                 body = body.Replace("{link}", link);
                 body = body.Replace("{message1}", message1);
                 body = body.Replace("{message2}", message2);
-                body = body.Replace("{LINKURL}", "https://ayuda.ng/");
-                body = body.Replace("{ayuda_logo}", Path.Combine(webRoot, "img/AyudaLogo.png"));
-                body = body.Replace("{ayuda_logoLight}", Path.Combine(webRoot, "img/AyudaLogoLight.png"));
             }
+
             return body;
         }
     }
