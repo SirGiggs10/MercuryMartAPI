@@ -116,6 +116,7 @@ namespace MercuryMartAPI
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<ICustomerCartItemRepository, CustomerCartItemRepository>();
             services.AddScoped<ICustomerOrderRepository, CustomerOrderRepository>();
+            services.AddScoped<IHomePageRepository, HomePageRepository>();
             services.AddScoped<Helper>();
 
             services.AddHttpContextAccessor();
