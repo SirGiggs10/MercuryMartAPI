@@ -9,6 +9,6 @@ namespace MercuryMartAPI.Dtos.CustomerOrder
     public class CustomerOrderRequest
     {
         public string OrderName { get; set; }
-        public List<CustomerOrderGroupRequest> CustomerOrderGroupRequests { get; set; }
+        public List<CustomerOrderGroupRequest> CustomerOrderGroups { get; set; }
     }
 }

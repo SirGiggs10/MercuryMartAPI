@@ -46,7 +46,7 @@ namespace MercuryMartAPI.Repositories
                 };
             }
 
-            if(customerOrderRequest.CustomerOrderGroupRequests == null)
+            if(customerOrderRequest.CustomerOrderGroups == null)
             {
                 return new ReturnResponse()
                 {
