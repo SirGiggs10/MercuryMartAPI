@@ -11,7 +11,9 @@ using MercuryMartAPI.API.Helpers;
 using MercuryMartAPI.Data;
 using MercuryMartAPI.Helpers;
 using MercuryMartAPI.Helpers.AuthorizationMiddleware;
+using MercuryMartAPI.Helpers.Logger;
 using MercuryMartAPI.Interfaces;
+using MercuryMartAPI.Interfaces.Logger;
 using MercuryMartAPI.Models;
 using MercuryMartAPI.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,6 +31,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using NLog;
 
 namespace MercuryMartAPI
 {
@@ -36,6 +39,7 @@ namespace MercuryMartAPI
     {
         public Startup(IConfiguration configuration)
         {
+            LogManager.LoadConfiguration(String.Concat(Directory.GetCurrentDirectory(), "/nlog.config"));
             Configuration = configuration;
         }
 
@@ -119,6 +123,8 @@ namespace MercuryMartAPI
             services.AddScoped<IHomePageRepository, HomePageRepository>();
             services.AddScoped<IDashboardRepository, DashboardRepository>();
             services.AddScoped<Helper>();
+
+            services.AddSingleton<ILoggerManager, LoggerManager>();
 
             services.AddHttpContextAccessor();
             services.AddAutoMapper(typeof(Startup));

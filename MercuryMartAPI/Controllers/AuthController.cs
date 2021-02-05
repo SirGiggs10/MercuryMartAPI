@@ -20,6 +20,7 @@ using MercuryMartAPI.Data;
 using System.Collections.Generic;
 using MercuryMartAPI.Helpers.AuthorizationMiddleware;
 using MercuryMartAPI.Dtos.Administrator;
+using MercuryMartAPI.Interfaces.Logger;
 
 namespace MercuryMartAPI.Controllers
 {
@@ -33,14 +34,16 @@ namespace MercuryMartAPI.Controllers
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly DataContext _dataContext;
+        private readonly ILoggerManager _logger;
 
-        public AuthController(UserManager<User> userManager, IAuthRepository authRepository, IMapper mapper, IConfiguration configuration, DataContext dataContext)
+        public AuthController(UserManager<User> userManager, IAuthRepository authRepository, IMapper mapper, IConfiguration configuration, DataContext dataContext, ILoggerManager logger)
         {
             _userManager = userManager;
             _authRepository = authRepository;
             _mapper = mapper;
             _configuration = configuration;
             _dataContext = dataContext;
+            _logger = logger;
         }
 
         /// <summary>
@@ -52,6 +55,7 @@ namespace MercuryMartAPI.Controllers
         public async Task<ActionResult> PostLogin([FromBody] UserForLoginDto userForLoginDto)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
+            _logger.LogInfo($"UserEmail: {userForLoginDto.EmailAddress} Logging In...");
             var result = await _authRepository.LoginUser(userForLoginDto, _configuration.GetValue<string>("AppSettings:Secret"));
 
             if (result.StatusCode == Utils.Success)
@@ -71,13 +75,17 @@ namespace MercuryMartAPI.Controllers
                 }
 
                 result.ObjectValue = userInfoToReturn;
+                _logger.LogInfo("Committing...");
                 await dbTransaction.CommitAsync();
+                _logger.LogInfo($"UserEmail: {userForLoginDto.EmailAddress} Login Successful");
 
                 return StatusCode(StatusCodes.Status200OK, result);
             }
             else
             {
+                _logger.LogInfo("Rolling Back...");
                 await dbTransaction.RollbackAsync();
+                _logger.LogInfo($"UserEmail: {userForLoginDto.EmailAddress} Login Failed");
 
                 return StatusCode(StatusCodes.Status400BadRequest, result);
             }

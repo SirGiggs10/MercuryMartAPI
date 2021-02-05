@@ -20,6 +20,7 @@ using MercuryMartAPI.DTOs.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using MercuryMartAPI.Dtos.Auth;
+using MercuryMartAPI.Interfaces.Logger;
 
 namespace MercuryMartAPI.Repositories
 {
@@ -32,8 +33,9 @@ namespace MercuryMartAPI.Repositories
         private readonly IConfiguration _configuration;
         private readonly IMailRepository _mailRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILoggerManager _logger;
 
-        public AuthRepository(DataContext dataContext, UserManager<User> userManager, IConfiguration configuration, IMailRepository mailRepository, SignInManager<User> signInManager, IGlobalRepository globalRepository, IHttpContextAccessor httpContextAccessor)
+        public AuthRepository(DataContext dataContext, UserManager<User> userManager, IConfiguration configuration, IMailRepository mailRepository, SignInManager<User> signInManager, IGlobalRepository globalRepository, IHttpContextAccessor httpContextAccessor, ILoggerManager logger)
         {
             _dataContext = dataContext;
             _userManager = userManager;
@@ -42,6 +44,7 @@ namespace MercuryMartAPI.Repositories
             _configuration = configuration;
             _mailRepository = mailRepository;
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
         }
 
         public async Task<ReturnResponse> LoginUser(UserForLoginDto userLoginDetails, string secretKey)
@@ -50,6 +53,7 @@ namespace MercuryMartAPI.Repositories
 
             if (user == null)
             {
+                _logger.LogError("User Not Found");
                 return new ReturnResponse()
                 {
                     StatusCode = Utils.SignInError,
@@ -71,6 +75,7 @@ namespace MercuryMartAPI.Repositories
                 }
                 else
                 {
+                    _logger.LogError("Invalid UserType");
                     return new ReturnResponse()
                     {
                         StatusCode = Utils.InvalidUserType,
@@ -83,6 +88,7 @@ namespace MercuryMartAPI.Repositories
                 var updateResult = await _userManager.UpdateAsync(user);
                 if(!updateResult.Succeeded)
                 {
+                    _logger.LogError("User Information Update Failed");
                     return new ReturnResponse()
                     {
                         StatusCode = Utils.NotSucceeded,
@@ -102,6 +108,7 @@ namespace MercuryMartAPI.Repositories
                 };
             }
 
+            _logger.LogError("Password Incorrect");
             return new ReturnResponse()
             {
                 StatusCode = Utils.SignInError,
