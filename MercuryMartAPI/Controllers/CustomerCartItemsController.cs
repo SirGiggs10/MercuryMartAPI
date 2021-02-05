@@ -89,7 +89,7 @@ namespace MercuryMartAPI.Controllers
         // DELETE: api/CustomerCartItems/5
         [RequiredFunctionalityName("DeleteCustomerCartItem")]
         [HttpDelete("{customerCartItemId}")]
-        public async Task<ActionResult<ReturnResponse>> DeleteCustomerCartItem(int customerCartItemId)
+        public async Task<ActionResult<ReturnResponse>> DeleteCustomerCartItem([FromRoute] int customerCartItemId)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
             var result = await _customerCartItemRepository.DeleteCustomerCartItem(customerCartItemId);

@@ -38,7 +38,7 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("PostRoles")]
         [HttpPost("Roles/Create")]
-        public async Task<ActionResult> PostRoles(List<RoleRequest> roles)
+        public async Task<ActionResult> PostRoles([FromBody] List<RoleRequest> roles)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
             var result = await _roleManagementRepository.CreateRoles(_mapper.Map<List<Role>>(roles));
@@ -89,7 +89,7 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("GetRole")]
         [HttpGet("Roles/{id}")]
-        public async Task<ActionResult> GetRoles(int id)
+        public async Task<ActionResult> GetRoles([FromRoute] int id)
         {
             var result = await _roleManagementRepository.GetRoles(id);
 
@@ -110,7 +110,7 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("PutRoles")]
         [HttpPost("Roles/Update")]
-        public async Task<ActionResult> PutRoles(List<RoleResponse> roleResponses)
+        public async Task<ActionResult> PutRoles([FromBody] List<RoleResponse> roleResponses)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
             var result = await _roleManagementRepository.UpdateRoles(roleResponses);
@@ -184,7 +184,7 @@ namespace MercuryMartAPI.Controllers
         /// </summary>
         [RequiredFunctionalityName("PostProjectModules")]
         [HttpPost("ProjectModules/Create")]
-        public async Task<ActionResult> PostProjectModule(List<ProjectModuleRequest> projectModules)
+        public async Task<ActionResult> PostProjectModule([FromBody] List<ProjectModuleRequest> projectModules)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
             var result = await _roleManagementRepository.CreateProjectModule(_mapper.Map<List<ProjectModule>>(projectModules));
@@ -280,7 +280,7 @@ namespace MercuryMartAPI.Controllers
         //[RequiredFunctionalityName("PostFunctionality")]
         [RequiredFunctionalityName("PostFunctionalities")]
         [HttpPost("Functionalities/Create")]
-        public async Task<ActionResult> PostFunctionality(List<FunctionalityRequest> functionalities)
+        public async Task<ActionResult> PostFunctionality([FromBody] List<FunctionalityRequest> functionalities)
         {
             var dbTransaction = await _dataContext.Database.BeginTransactionAsync();
             var result = await _roleManagementRepository.CreateFunctionality(_mapper.Map<List<Functionality>>(functionalities));

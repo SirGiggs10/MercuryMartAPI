@@ -61,7 +61,7 @@ namespace MercuryMartAPI.Controllers
         // GET: api/CustomerOrders/5
         [RequiredFunctionalityName("GetCustomerOrder")]
         [HttpGet("{customerOrderId}")]
-        public async Task<ActionResult<ReturnResponse>> GetCustomerOrder(int customerOrderId)
+        public async Task<ActionResult<ReturnResponse>> GetCustomerOrder([FromRoute] int customerOrderId)
         {
             var result = await _customerOrderRepository.GetCustomerOrder(customerOrderId);
 
