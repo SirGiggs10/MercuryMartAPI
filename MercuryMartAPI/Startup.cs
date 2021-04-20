@@ -106,9 +106,24 @@ namespace MercuryMartAPI
             services.AddTransient<IAuthorizationPolicyProvider, FunctionalityNamePolicy>();
             services.AddTransient<IAuthorizationHandler, FunctionalityNameHandler>();
 
-            services.AddDbContext<DataContext>(options => options.UseLazyLoadingProxies(false).UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), a => {
-                //a.EnableRetryOnFailure();
-             }));
+             // Ikem addition
+            string envVar = Environment.GetEnvironmentVariable("DATABASE_URL");
+            var uri = new Uri(envVar);
+            var username = uri.UserInfo.Split(':')[0];
+            var password = uri.UserInfo.Split(':')[1];
+            string connectionString = 
+            "; Database=" + uri.AbsolutePath.Substring(1) +
+            "; Username=" + username +
+            "; Password=" + password + 
+            ";Host=" + uri.Host +
+            "; Port=" + uri.Port +
+            "; SSL Mode=Require; Trust Server Certificate=true;";
+
+            services.AddDbContext<DataContext>(opt =>
+             	opt.
+                UseLazyLoadingProxies(false).
+                UseNpgsql(connectionString)  // testConn was for migrations offline 
+            );
             services.AddScoped<IAdministratorRepository, AdministratorRepository>();
             services.AddScoped<ICustomerManagementRepository, CustomerManagementRepository>();
             services.AddScoped<IGlobalRepository, GlobalRepository>();
